@@ -4,8 +4,8 @@ compatibility_date = "2025-01-01"
 
 [vars]
 # Pages allowed to call this Worker, comma separated, exactly as the browser shows them (scheme + host, no path, no trailing slash).
-# Add the address where you host the app. http://localhost:8000 is for trying it on your own computer.
-ALLOWED_ORIGINS = "http://localhost:8000"
+# Add the address where you host the app. http://localhost:8000 is for trying it on your own computer; https://r7orbit.io is the site.
+ALLOWED_ORIGINS = "http://localhost:8000,https://r7orbit.io"
 # Any chat-capable OpenAI model your key can use. Smaller models cost less.
 OPENAI_MODEL = "gpt-4o-mini"
 
