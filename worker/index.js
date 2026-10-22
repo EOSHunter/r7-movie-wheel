@@ -1,6 +1,6 @@
 // Backend for R7 Movie Wheel: the chat proxy (keeps your OpenAI key server side) and list sync (keeps your list on every device).
 //
-//   POST /        { messages, context }        -> { reply }          chat (also POST /chat)
+//   POST /        { messages, context }        -> { reply, followups?, actions? }   chat (also POST /chat)
 //   GET  /list                                  -> { list, removed, savedAt }   or { list: null }
 //   PUT  /list    { list, removed, base }      -> { list, removed, savedAt }   merged result
 //
@@ -66,6 +66,7 @@ function cleanMovie(x) {
     rating: Math.min(5, Math.max(0, Math.round(+x.rating) || 0)),
     review: String(x.review || '').slice(0, 280),
     addedAt: +x.addedAt || 0, watchedAt: +x.watchedAt || 0, updatedAt: +x.updatedAt || 0,
+    addedBy: /^[a-z0-9_-]{1,24}$/.test(String(x.addedBy || '')) ? String(x.addedBy) : '',
   };
 }
 function cleanRemoved(r, now) {
@@ -120,11 +121,67 @@ async function handleList(request, env, origin) {
 
 /* ---------- chat ---------- */
 
-const SYSTEM = `You are the movie assistant inside the owner's personal Movie Wheel app.
+const SYSTEM = `You are R7, the movie assistant inside the owner's personal Movie Wheel app. If asked your name, say you are R7.
 You can see their full movie history below: what they have watched (with their own star ratings and short reviews), what is still on their to-watch list, genres, lengths and release years.
 Answer using that data. Be specific: name titles, give counts and hours, and say when something is not in the data instead of guessing.
 You may recommend films from outside the list when asked, but say they are not on the list. When you recommend from the to-watch list, use exactly the titles shown.
-Keep answers short and plain. Do not use emoji. Rating scale is 1 to 5 stars; 4 and 5 stars count as favorites.`;
+Keep answers short and plain. Do not use emoji. Rating scale is 1 to 5 stars; 4 and 5 stars count as favorites.
+Format with simple Markdown: **bold** for movie titles and key numbers, and a numbered or bulleted list when naming several movies. No tables and no headings.
+When asked to recommend movies to add or watch, first check every title against the WATCHED and TO WATCH lists, and never suggest a movie that appears in either one.
+You can add movies to the to-watch list with the add_movies tool. Use it only when the user asks you to add movies (or to add what you just recommended). Never add movies on your own, and never add a title that is already on either list. After adding, say in one short sentence which movies you added.
+After your answer, add one last line in exactly this form, with nothing after it: [[followups: first | second | third]]
+Give 2 or 3 short things the user could say next, written as the user would say them and under 60 characters each: a next step, a recommendation, or a related question. When you have just recommended movies, make one of them ask you to add them to the list. Never mention or explain this line.`;
+
+// What R7 may do to the list. The Worker only passes the request on; the page carries it out (and shows an Undo).
+const TOOLS = [{
+  type: 'function',
+  function: {
+    name: 'add_movies',
+    description: "Add movies to the user's to-watch list. Only when the user asks you to add movies. Never add a title that is already on the WATCHED or TO WATCH lists.",
+    parameters: {
+      type: 'object',
+      properties: {
+        movies: {
+          type: 'array',
+          maxItems: 10,
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string', description: 'The movie title, as it is usually written.' },
+              year: { type: 'integer', description: 'The release year, if you are sure of it.' },
+            },
+            required: ['title'],
+          },
+        },
+      },
+      required: ['movies'],
+    },
+  },
+}];
+
+// The movies in an add_movies call, cleaned: up to 10, a title of up to 120 characters, a plausible year.
+export function cleanAddMovies(args) {
+  let parsed = args;
+  if (typeof args === 'string') { try { parsed = JSON.parse(args); } catch { return []; } }
+  const list = parsed && parsed.movies;
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const m of list.slice(0, 50)) {
+    const title = String((m && m.title) || '').trim().slice(0, 120);
+    if (!title) continue;
+    const year = Math.round(Number(m && m.year));
+    out.push(year >= 1880 && year <= 2100 ? { title, year } : { title });
+  }
+  return out.slice(0, 10);
+}
+
+// Takes the "[[followups: a | b | c]]" line off the end of a reply: the reply without it, and up to 3 short follow-up messages.
+export function splitFollowups(text) {
+  const m = /\[\[\s*followups\s*:([\s\S]*?)\]\]\s*$/i.exec(text);
+  if (!m) return { reply: text.replace(/\[\[\s*followups[\s\S]*$/i, '').trimEnd(), followups: [] };
+  const followups = m[1].split('|').map((x) => x.replace(/^["'\s]+|["'\s]+$/g, '').slice(0, 80)).filter(Boolean).slice(0, 3);
+  return { reply: text.slice(0, m.index).trimEnd(), followups };
+}
 
 async function handleChat(request, env, origin) {
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405, origin);
@@ -141,30 +198,53 @@ async function handleChat(request, env, origin) {
     clean.push({ role: m.role, content: m.content });
   }
   if (clean[clean.length - 1].role !== 'user') return json({ error: 'The last message must be from the user.' }, 400, origin);
-  const ctx = typeof context === 'string' ? context.slice(0, MAX_CONTEXT_CHARS) : '';
+  const system = { role: 'system', content: SYSTEM + '\n\n--- MOVIE DATA ---\n' + (typeof context === 'string' ? context.slice(0, MAX_CONTEXT_CHARS) : '') };
 
-  let res;
-  try {
-    res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env.OPENAI_API_KEY },
-      body: JSON.stringify({
-        model: env.OPENAI_MODEL || 'gpt-4o-mini',
-        max_completion_tokens: MAX_REPLY_TOKENS,
-        messages: [{ role: 'system', content: SYSTEM + '\n\n--- MOVIE DATA ---\n' + ctx }, ...clean],
-      }),
-    });
-  } catch {
-    return json({ error: 'Could not reach OpenAI.' }, 502, origin);
+  const ask = async (payload) => {
+    let res;
+    try {
+      res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env.OPENAI_API_KEY },
+        body: JSON.stringify({ model: env.OPENAI_MODEL || 'gpt-4o-mini', max_completion_tokens: MAX_REPLY_TOKENS, ...payload }),
+      });
+    } catch {
+      return { error: json({ error: 'Could not reach OpenAI.' }, 502, origin) };
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = data && data.error && data.error.message ? String(data.error.message).slice(0, 300) : 'OpenAI returned status ' + res.status + '.';
+      return { error: json({ error: 'OpenAI said: ' + msg }, 502, origin) };
+    }
+    return { data };
+  };
+
+  const first = await ask({ messages: [system, ...clean], tools: TOOLS });
+  if (first.error) return first.error;
+  const message = first.data && first.data.choices && first.data.choices[0] && first.data.choices[0].message;
+  const calls = ((message && message.tool_calls) || []).filter((c) => c && c.type === 'function');
+  if (!calls.length) {
+    const raw = message && message.content;
+    if (!raw) return json({ error: 'OpenAI sent an empty answer.' }, 502, origin);
+    const { reply, followups } = splitFollowups(raw);
+    return json(followups.length ? { reply, followups } : { reply }, 200, origin);
   }
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const msg = data && data.error && data.error.message ? String(data.error.message).slice(0, 300) : 'OpenAI returned status ' + res.status + '.';
-    return json({ error: 'OpenAI said: ' + msg }, 502, origin);
-  }
-  const reply = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (!reply) return json({ error: 'OpenAI sent an empty answer.' }, 502, origin);
-  return json({ reply }, 200, origin);
+
+  // R7 asked to add movies. The page does the adding; the model is told it was done and writes the short confirmation.
+  const actions = [];
+  const results = calls.map((c) => {
+    if (!c.function || c.function.name !== 'add_movies') return { role: 'tool', tool_call_id: c.id, content: 'That tool does not exist.' };
+    const movies = cleanAddMovies(c.function.arguments);
+    if (!movies.length) return { role: 'tool', tool_call_id: c.id, content: 'No valid movies were given, so nothing was added.' };
+    actions.push({ type: 'add_movies', movies });
+    return { role: 'tool', tool_call_id: c.id, content: 'Done. The app adds them to the to-watch list and skips any title that is already on it.' };
+  });
+  const names = actions.flatMap((a) => a.movies.map((m) => m.title));
+  const second = await ask({ messages: [system, ...clean, { role: 'assistant', content: (message && message.content) || null, tool_calls: calls }, ...results] });
+  const text = second.error ? '' : (second.data && second.data.choices && second.data.choices[0] && second.data.choices[0].message && second.data.choices[0].message.content) || '';
+  const split = splitFollowups(text);
+  const reply = split.reply || (names.length ? "I'll add " + names.join(', ') + ' to your list.' : "I couldn't add anything from that.");
+  return json({ reply, ...(split.followups.length ? { followups: split.followups } : {}), ...(actions.length ? { actions } : {}) }, 200, origin);
 }
 
 /* ---------- entry ---------- */

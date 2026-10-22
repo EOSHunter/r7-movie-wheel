@@ -120,6 +120,9 @@ li .gl{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 li .field{height:28px;font-size:13px}
 .chip{font-size:10px;line-height:1;padding:3px 8px;border:1px solid var(--line);border-radius:var(--r-pill);color:var(--text-2)}
 .chip.on{color:var(--brass-bright);border-color:var(--line-brass)}
+.chip.who{color:var(--text);border-color:var(--line-strong)}
+.chip.who.r7{color:var(--brass-bright);border-color:var(--line-brass);background:var(--brass-wash)}
+select.field{font-size:16px;padding-right:var(--s-2)}
 .chip.len{font-family:var(--mono);color:var(--text-3);border-color:transparent;padding-inline:2px}
 .review{font:italic 400 15px/1.3 var(--display);color:var(--text-2);overflow-wrap:anywhere}
 .stars{display:inline-flex;gap:0}
@@ -261,7 +264,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   function uid(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
   var local = {
-    add:function(t,g,x){ movies.push(Object.assign({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now(),updatedAt:Date.now()},x||{})); lsSave(); touch(); refresh(); },
+    add:function(t,g,x){ movies.push(Object.assign({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now(),updatedAt:Date.now(),addedBy:me?me.key:''},x||{})); lsSave(); touch(); refresh(); },
     patch:function(id,p){ var m=movies.find(function(x){return x.id===id}); if(m){Object.assign(m,p,{updatedAt:Date.now()}); lsSave(); touch(); refresh();} },
     remove:function(id){ movies=movies.filter(function(x){return x.id!==id}); if(window.MW_SYNC) MW_SYNC.removed(id); lsSave(); touch(); refresh(); }
   };
@@ -348,13 +351,30 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   /* ---------- genres ---------- */
   var PRESET=['Action','Comedy','Drama','Horror','Sci-fi','Thriller','Romance','Animation','Documentary','Fantasy','Mystery','Crime'];
   var selected=[];                 // genre keys chosen as the wheel's filter (a movie matches when it has any of them)
+  var srcSel=[];                   // "added by" keys chosen as a filter ('_' stands for movies from before names were tracked)
+  var me=null, people=[];          // who is signed in, and the names that "added by" can show (same-site API only)
+  function srcKey(m){ return m.addedBy||'_'; }
+  function srcName(k){
+    if(!k || k==='_') return 'Earlier';
+    if(k==='r7') return 'R7';
+    var p=people.find(function(x){return x.key===k});
+    return p ? p.name : k.charAt(0).toUpperCase()+k.slice(1);
+  }
+  function srcCounts(list){        // who added the movies in a list: [{key,name,n}], people first, R7 next, then earlier ones
+    var map={};
+    list.forEach(function(m){ var k=srcKey(m); (map[k]=map[k]||{key:k,name:srcName(k),n:0}).n++; });
+    var rank=function(k){ return k==='_' ? 2 : k==='r7' ? 1 : 0; };
+    return Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){ return (rank(a.key)-rank(b.key)) || a.name.localeCompare(b.name); });
+  }
   var editGenres=[];               // genre names being edited on one row
   function gkey(g){ return String(g).trim().toLowerCase(); }
   function gname(g){ g=String(g).trim().replace(/\s+/g,' '); return g.charAt(0).toUpperCase()+g.slice(1); }
   function gens(m){ return Array.isArray(m.genres)?m.genres:[]; }
   function pool(){
-    var t=todo(); if(!selected.length) return t;
-    return t.filter(function(m){ return gens(m).some(function(g){ return selected.indexOf(gkey(g))>=0; }); });
+    var t=todo();
+    if(selected.length) t=t.filter(function(m){ return gens(m).some(function(g){ return selected.indexOf(gkey(g))>=0; }); });
+    if(srcSel.length) t=t.filter(function(m){ return srcSel.indexOf(srcKey(m))>=0; });
+    return t;
   }
   function genreCounts(list){      // genres on a list of movies: [{key,name,n}] by name
     var map={};
@@ -394,30 +414,36 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     wrap.append(chips,cu);
     return wrap;
   }
-  function renderFilter(){
-    var host=$('filter'), counts=genreCounts(todo());
-    selected=selected.filter(function(k){ return counts.some(function(c){return c.key===k}); });
-    host.innerHTML='';
-    if(!counts.length){
-      var h=el('div','fine','Click Edit on a movie to give it genres, then you can spin one genre at a time.'); h.style.textAlign='center';
-      host.append(h); return;
-    }
-    host.append(el('span','eyebrow','Spin from'));
-    var row=el('div','gchips'); row.setAttribute('role','group'); row.setAttribute('aria-label','Genres on the wheel');
-    var all=el('button','gchip','All genres'); all.type='button';
-    all.setAttribute('aria-pressed',String(!selected.length)); all.disabled=spinning;
-    all.onclick=function(){ selected=[]; filterChanged(); };
+  // A labelled row of filter chips: "All" plus one chip per item with its count. `sel` is the array of chosen keys (changed in place).
+  function chipGroup(host,label,aria,allText,items,sel,onChange,disabled){
+    host.append(el('span','eyebrow',label));
+    var row=el('div','gchips'); row.setAttribute('role','group'); row.setAttribute('aria-label',aria);
+    var all=el('button','gchip',allText); all.type='button'; all.setAttribute('aria-pressed',String(!sel.length)); all.disabled=!!disabled;
+    all.onclick=function(){ sel.length=0; onChange(); };
     row.append(all);
-    counts.forEach(function(c){
-      var b=el('button','gchip'); b.type='button'; b.disabled=spinning;
-      b.setAttribute('aria-pressed',String(selected.indexOf(c.key)>=0));
+    items.forEach(function(c){
+      var b=el('button','gchip'); b.type='button'; b.disabled=!!disabled;
+      b.setAttribute('aria-pressed',String(sel.indexOf(c.key)>=0));
       b.append(document.createTextNode(c.name+' '), el('span','n',c.n));
-      b.onclick=function(){ var i=selected.indexOf(c.key); if(i>=0) selected.splice(i,1); else selected.push(c.key); filterChanged(); };
+      b.onclick=function(){ var i=sel.indexOf(c.key); if(i>=0) sel.splice(i,1); else sel.push(c.key); onChange(); };
       row.append(b);
     });
     host.append(row);
-    var p=pool().length, all_=todo().length;
-    host.append(el('div','status', selected.length ? p+' of '+all_+' movies on the wheel' : all_+' movies on the wheel'));
+  }
+  function renderFilter(){
+    var host=$('filter'), t=todo(), counts=genreCounts(t), srcs=srcCounts(t);
+    selected=selected.filter(function(k){ return counts.some(function(c){return c.key===k}); });
+    srcSel=srcSel.filter(function(k){ return srcs.some(function(c){return c.key===k}); });
+    host.innerHTML='';
+    var showSrc=srcs.some(function(c){return c.key!=='_'});        // only once a name is on a movie
+    if(!counts.length && !showSrc){
+      var h=el('div','fine','Click Edit on a movie to give it genres, then you can spin one genre at a time.'); h.style.textAlign='center';
+      host.append(h); return;
+    }
+    if(counts.length) chipGroup(host,'Spin from','Genres on the wheel','All genres',counts,selected,filterChanged,spinning);
+    if(showSrc) chipGroup(host,'Added by','Who added the movies on the wheel','Anyone',srcs,srcSel,filterChanged,spinning);
+    var p=pool().length, n=t.length;
+    host.append(el('div','status', (selected.length||srcSel.length) ? p+' of '+n+' movies on the wheel' : n+' movies on the wheel'));
   }
   function filterChanged(){ if(spinning) return; winnerId=null; $('result').innerHTML=''; renderFilter(); syncControls(); draw(); render(); }
 
@@ -566,7 +592,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   }
 
   /* ---------- list ---------- */
-  var wf={mode:'all',sort:'recent',genres:[]};     // filters on the Watched tab
+  var wf={mode:'all',sort:'recent',genres:[],src:[]};     // filters on the Watched tab
   function showErr(msg){ var e=$('err'); e.hidden=!msg; e.textContent=msg||''; }
   function btn(label,cls,fn){ var b=el('button',cls,label); b.type='button'; b.onclick=fn; return b; }
   function starRow(val,onSet,label){
@@ -584,6 +610,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     if(wf.mode==='fav') l=l.filter(function(m){return m.rating>=4});
     if(wf.mode==='unrated') l=l.filter(function(m){return !m.rating});
     if(wf.genres.length) l=l.filter(function(m){ return gens(m).some(function(g){return wf.genres.indexOf(gkey(g))>=0}); });
+    if(wf.src.length) l=l.filter(function(m){ return wf.src.indexOf(srcKey(m))>=0; });
     if(wf.sort==='rating') l.sort(function(a,b){return (b.rating-a.rating)||((b.watchedAt||0)-(a.watchedAt||0))});
     else l.sort(function(a,b){return (b.watchedAt||0)-(a.watchedAt||0)});
     return l;
@@ -616,6 +643,9 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       });
       host.append(chips);
     }
+    var srcs=srcCounts(watched);
+    wf.src=wf.src.filter(function(k){return srcs.some(function(c){return c.key===k})});
+    if(srcs.some(function(c){return c.key!=='_'})) chipGroup(host,'Added by','Who added the watched movies','Anyone',srcs,wf.src,render,false);
   }
   function render(){
     var todoList=todo(), doneAll=movies.filter(function(m){return m.watched});
@@ -639,6 +669,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       if(m.watched) gl.append(starRow(m.rating,function(n){ store.patch(m.id,{rating:n}); },'Rating for '+m.title));
       var lenTxt=[fmtLen(m.runtime), m.year||''].filter(Boolean).join(' · ');
       if(lenTxt) gl.append(el('span','chip len',lenTxt));
+      if(m.addedBy) gl.append(el('span','chip who'+(m.addedBy==='r7'?' r7':''),srcName(m.addedBy)));
       gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){
         gl.append(el('span','chip'+(selected.indexOf(gkey(g))>=0?' on':''),gname(g)));
       });
@@ -661,13 +692,14 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     var len=el('input','field num'); len.type='number'; len.min='0'; len.max='999'; len.placeholder='Minutes'; len.setAttribute('aria-label','Length in minutes'); if(m.runtime) len.value=m.runtime;
     var pickerHost=el('div');
     var drawPicker=function(){ pickerHost.innerHTML=''; pickerHost.append(genrePicker(editGenres)); };
-    var rv=null;
+    var rv=null, saveBy=function(){};
     var save=function(){
       var v=inp.value.trim(); editingId=null;
       if(!v){ render(); return; }
       if(v.toLowerCase()!==m.title.toLowerCase() && movies.some(function(o){return o.id!==m.id && o.title.toLowerCase()===v.toLowerCase()})) v=m.title;
       var patch={title:v,genres:editGenres.slice(),runtime:Math.max(0,Math.round(+len.value)||0),year:d.year};
       if(m.watched){ patch.rating=d.rating; patch.review=rv.value.trim().slice(0,280); }
+      saveBy(patch);
       store.patch(m.id,patch);
     };
     var cancel=function(){editingId=null;render();};
@@ -685,6 +717,14 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       ed.append(rv);
     }
     ed.append(el('span','eyebrow','Genres')); drawPicker(); ed.append(pickerHost);
+    var by=null;
+    if(people.length){
+      ed.append(el('span','eyebrow','Added by'));
+      by=el('select','field'); by.setAttribute('aria-label','Added by');
+      [{key:'',name:'Not sure'}].concat(people).forEach(function(p){ var o=el('option',null,p.name); o.value=p.key; by.append(o); });
+      by.value=m.addedBy||''; ed.append(by);
+    }
+    saveBy=function(patch){ if(by && by.value && by.value!==(m.addedBy||'')) patch.addedBy=by.value; };
     li.append(ed);
     setTimeout(function(){inp.focus();inp.select();},0);
   }
@@ -694,9 +734,9 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     $('spin').disabled=!can; $('hub').disabled=!can;
     $('spin').textContent = spinning ? 'Spinning' : 'Spin the wheel';
     $('emptyWheel').hidden = n>=2;
-    var f=selected.length>0;
-    $('emptyTitle').textContent = f ? 'Not enough movies in these genres' : 'Add two films to begin';
-    $('emptyText').textContent = f ? 'Pick more genres, or choose All genres.' : 'The wheel needs at least two unwatched movies to spin.';
+    var f=selected.length>0 || srcSel.length>0;
+    $('emptyTitle').textContent = f ? 'Not enough movies with these filters' : 'Add two films to begin';
+    $('emptyText').textContent = f ? 'Pick more, or choose All genres and Anyone.' : 'The wheel needs at least two unwatched movies to spin.';
   }
   function refresh(){
     if(spinning){ dirty=true; return; }
@@ -790,6 +830,13 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       var noy=W.filter(function(m){return !m.year}).length; if(noy) cd.append(el('div','fine',noy+' watched films have no release year yet.'));
     } else cd.append(el('p','lead','Release years come with the library lookup. Fill in lengths below to add them.'));
     grid.append(cd);
+    var whoAdded=srcCounts(movies);
+    if(whoAdded.some(function(c){return c.key!=='_'})){
+      var cw=card('Who added what');
+      cw.append(bars(whoAdded.map(function(c){return {label:c.name,value:c.n}}),function(r){return String(r.value)}));
+      cw.append(el('div','fine','Every movie on the list, watched or not. "Earlier" means it was added before names were tracked.'));
+      grid.append(cw);
+    }
     host.append(grid);
 
     var ce=card('Extremes and backlog');
@@ -826,7 +873,12 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     });
     $('h1').innerHTML = view==='dash' ? 'Your watching, <em>in numbers.</em>' : view==='chat' ? 'Ask about <em>your movies.</em>' : 'Spin for <em>tonight\'s film.</em>';
     if(view==='dash') renderDash();
-    else if(view==='chat') window.MW_CHAT.render($('viewChat'),{movies:function(){return movies}, fmtLen:fmtLen, gname:gname, gens:gens});
+    else if(view==='chat') window.MW_CHAT.render($('viewChat'),{
+      movies:function(){return movies}, fmtLen:fmtLen, gname:gname, gens:gens,
+      who:function(m){ return m.addedBy ? srcName(m.addedBy) : ''; },
+      addMovies:addFromChat,
+      removeMovies:function(ids){ ids.forEach(function(id){ store.remove(id); }); }
+    });
     else draw();
   }
 
@@ -882,7 +934,26 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       genres:(Array.isArray(x.genres)?x.genres:[]).map(function(g){return gname(g)}).filter(Boolean).slice(0,12),
       runtime:Math.max(0,Math.round(+x.runtime)||0), year:Math.max(0,Math.round(+x.year)||0),
       rating:Math.min(5,Math.max(0,Math.round(+x.rating)||0)), review:String(x.review||'').slice(0,280),
-      addedAt:+x.addedAt||Date.now(), watchedAt:+x.watchedAt||0, updatedAt:+x.updatedAt||0};
+      addedAt:+x.addedAt||Date.now(), watchedAt:+x.watchedAt||0, updatedAt:+x.updatedAt||0,
+      addedBy:/^[a-z0-9_-]{1,24}$/.test(String(x.addedBy||'')) ? String(x.addedBy) : ''};
+  }
+  // R7 (the chat) adds movies here: the same path as the add box, marked as added by R7, skipping titles already on the list.
+  function addFromChat(items){
+    var added=[], skipped=[], have={};
+    movies.forEach(function(m){ have[norm(m.title)]=1; });
+    (Array.isArray(items)?items:[]).slice(0,10).forEach(function(it){
+      var t=String((it&&it.title)||'').trim().slice(0,120); if(!t) return;
+      var year=+(it&&it.year)||0, x=null;
+      if(lib) x=lib.m.find(function(e){ return e.n===norm(t) && (!year || e.year===year); }) || exactMatch(t);
+      var title=x?x.title:t;
+      if(have[norm(title)] || have[norm(t)]){ skipped.push(title); return; }
+      have[norm(title)]=1;
+      var id=uid(), extra={id:id, addedBy:'r7'};
+      if(x){ extra.runtime=x.runtime; extra.year=x.year; } else if(year) extra.year=year;
+      store.add(title, x?x.genres.slice():[], extra);
+      added.push({id:id,title:title});
+    });
+    return {added:added, skipped:skipped};
   }
   function cleanList(a){ return (Array.isArray(a)?a:[]).map(cleanMovie).filter(Boolean); }
   function backupMsg(t){ $('backupMsg').textContent=t; }
@@ -911,6 +982,11 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   store = local; movies = lsLoad(); route(); refresh();
   // A page can ship a starting list (window.MW_SEED = 'movies-seed.json'). It loads once, on a device with no list, and never again.
   var seeded=false; try{ seeded=localStorage.getItem(SEEDED)==='1'; }catch(e){}
+  if(window.MW_CONFIG && window.MW_CONFIG.api){
+    fetch(window.MW_CONFIG.api+'/me').then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      if(d && d.key){ me={key:d.key,name:d.name}; people=Array.isArray(d.people)?d.people:[]; refresh(); }
+    }).catch(function(){});
+  }
   var seedDone = Promise.resolve();
   if(!movies.length && window.MW_SEED && !seeded){
     seedDone = fetch(window.MW_SEED).then(function(r){ return r.ok ? r.json() : null; }).then(function(a){

@@ -5,7 +5,8 @@ A wheel that picks what to watch, plus a dashboard of what you have watched and 
 - **Wheel.** Spin to pick from your to-watch list. Filter by one or more genres. Spin sounds (clicks and a landing chime) are made with Web Audio, with a mute button.
 - **List.** Add movies with a dropdown of about 23,500 films (length, release year and genres fill in for you). Mark movies as watched, rate them 1 to 5 stars and add an optional short review. Filter watched movies by favorites, unrated and genre.
 - **Dashboard.** Movies watched, hours watched, average rating, genres by count or by hours, rating spread, best-rated genres, favorites, release decades, longest and shortest watched, and the hours left on your watchlist.
-- **Chat.** Ask questions about your list, ratings and reviews. It runs through a small Cloudflare Worker that holds your OpenAI key (setup below).
+- **Chat with R7.** An assistant that knows your list, ratings and reviews. Ask it questions, ask it to add movies to your list (with an Undo), and tap its suggested follow-ups. Past chats are listed on the left (a menu on a phone). It runs through a small Cloudflare Worker that holds your OpenAI key (setup below); chats are then saved in your browser.
+- **Who added what.** Movies added by R7 (and, on a site with sign-in, by each person) are marked, and the wheel, the Watched tab and the dashboard can filter by it.
 - **Sync.** The same Worker keeps your list on every device, so a phone and a laptop show the same list, ratings and reviews.
 
 Styled with the R7 Orbit design system: obsidian, ivory and one brass accent.
