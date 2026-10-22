@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Movie Wheel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+[hidden]{display:none!important}
+/* Layout: wheel as the dial on the left, the list as a quiet panel on the right; stacks on phones. Tokens from R7 Orbit (obsidian, ivory, brass). */
+:root{
+  --bg:#09090a; --surface-1:#0f0f11; --surface-2:#151518; --surface-3:#1b1b1f;
+  --line:#ece4d214; --line-strong:#ece4d229; --line-brass:#c9a96a6b;
+  --text:#ece6d8; --text-2:#a39e92; --text-3:#6b675f;
+  --brass:#c9a96a; --brass-bright:#e3c98f; --brass-dim:#8c7647; --on-brass:#14110a;
+  --danger-text:#d9a39b; --st-failed:#b5685e; --st-done:#8fa58a;
+  --brass-wash:#c9a96a0d; --brass-wash-strong:#c9a96a1a; --selection:#c9a96a4d; --scrim:#09090adb;
+  --display:"Cormorant Garamond","Times New Roman",serif;
+  --ui:Inter,"Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",Consolas,monospace;
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px;
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-pill:99px;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+::selection{background:var(--selection)}
+body{background:var(--bg);color:var(--text);font:400 13px/1.5 var(--ui);letter-spacing:.005em;padding-inline:var(--s-5);padding-block:var(--s-5) var(--s-7);min-height:100%}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(#ece4d20b 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:radial-gradient(ellipse at 35% 40%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 35% 40%,#000 0%,transparent 70%)}
+.wrap{position:relative;max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-5)}
+header{display:flex;flex-direction:column;gap:var(--s-2)}
+.eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3)}
+.wordmark{font-size:11px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--text-2)}
+h1{font:400 44px/1.05 var(--display);margin:0;text-wrap:balance}
+h1 em{font-style:italic;color:var(--brass-bright)}
+.main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:var(--s-6);align-items:start}
+@media(max-width:820px){.main{grid-template-columns:minmax(0,1fr)} h1{font-size:34px}}
+
+/* wheel */
+.stage{display:flex;flex-direction:column;align-items:center;gap:var(--s-4)}
+.dial{position:relative;width:min(100%,460px);aspect-ratio:1}
+canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;left:50%;top:-6px;width:20px;height:26px;transform:translateX(-50%);z-index:2}
+.pointer svg{display:block;width:100%;height:100%}
+.pointer{transform-origin:50% 20%}
+.pointer.flick{animation:flick 90ms var(--ease)}
+@keyframes flick{0%{transform:translateX(-50%) rotate(-14deg)}100%{transform:translateX(-50%) rotate(0)}}
+.filter{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);text-align:center}
+.gchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.gchip{height:24px;padding:0 10px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:transparent;color:var(--text-2);font:400 11px var(--ui);cursor:pointer;transition:border-color 140ms var(--ease),color 140ms var(--ease),background 140ms var(--ease)}
+.gchip:hover:not(:disabled){border-color:var(--brass);color:var(--brass-bright)}
+.gchip[aria-pressed=true]{border-color:var(--brass);color:var(--brass-bright);background:var(--brass-wash-strong)}
+.gchip:disabled{color:var(--text-3);cursor:default}
+.gchip:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.gchip .n{font:400 10px var(--mono);color:var(--text-3)}
+.gchip[aria-pressed=true] .n{color:var(--brass-dim)}
+li .tw{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-block:2px}
+li .gl{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:10px;line-height:1;padding:3px 8px;border:1px solid var(--line);border-radius:var(--r-pill);color:var(--text-2)}
+.chip.on{color:var(--brass-bright);border-color:var(--line-brass)}
+li{flex:none}
+li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
+.edit{width:100%;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}
+.picker{display:flex;flex-direction:column;gap:var(--s-2)}
+.picker .field{height:28px;font-size:13px}
+.editrow{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;min-width:0}
+.editrow .field{flex:1 1 140px;min-width:0;width:auto}
+.editrow .icon-btn{flex:none}
+.spinrow{display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap;justify-content:center}
+.hub{position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:#020203;border:1px solid var(--brass);display:grid;place-items:center;color:var(--brass);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:0;cursor:pointer;font-family:var(--ui);transition:color 140ms var(--ease),border-color 140ms var(--ease)}
+.hub:hover:not(:disabled){color:var(--brass-bright);border-color:var(--brass-bright)}
+.hub:disabled{color:var(--text-3);border-color:var(--line-strong);cursor:default}
+.empty-wheel{position:absolute;inset:8%;display:grid;place-items:center;text-align:center;padding:var(--s-5);color:var(--text-2);border-radius:50%;border:1px dashed var(--line-strong)}
+.empty-wheel b{display:block;font:500 24px/1.2 var(--display);color:var(--text);margin-bottom:var(--s-1)}
+
+/* buttons */
+.btn{font:500 12px/1 var(--ui);letter-spacing:.02em;height:28px;padding:0 var(--s-3);border-radius:var(--r-sm);background:transparent;color:var(--text);border:1px solid var(--line-strong);cursor:pointer;transition:border-color 140ms var(--ease),color 140ms var(--ease),background 140ms var(--ease)}
+.btn:hover:not(:disabled){border-color:var(--brass);color:var(--brass-bright)}
+.btn:active:not(:disabled){transform:translateY(.5px)}
+.btn:focus-visible,.field:focus-visible,.seg button:focus-visible,.hub:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.btn.solid{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.btn.solid:hover:not(:disabled){background:var(--brass-bright);border-color:var(--brass-bright);color:var(--on-brass)}
+.btn.big{height:38px;padding:0 var(--s-6)}
+.btn.quiet{border-color:transparent;color:var(--text-2)}
+.btn.quiet:hover:not(:disabled){border-color:var(--line-strong)}
+.btn:disabled{color:var(--text-3);border-color:var(--line);cursor:default;background:transparent}
+
+/* result */
+.result{width:100%;max-width:460px;background:var(--brass-wash);border:1px solid var(--line-brass);border-radius:var(--r-md);padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-3);animation:arrive 420ms var(--ease)}
+.result h2{font:500 34px/1.1 var(--display);margin:0;color:var(--brass-bright);overflow-wrap:anywhere;text-wrap:balance}
+.result .row{display:flex;gap:var(--s-2);flex-wrap:wrap}
+@keyframes arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* list panel */
+.panel{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-4);min-width:0}
+.add{display:flex;gap:var(--s-2)}
+.field{flex:1;min-width:0;height:38px;background:var(--bg);color:var(--text);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:0 var(--s-3);font:400 13px var(--ui)}
+.field::placeholder{color:var(--text-3)}
+.field:focus{border-color:var(--brass);outline:none}
+.field-error{color:var(--danger-text);font-size:12px;margin-top:calc(var(--s-2) * -1 + 2px)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--r-sm);overflow:hidden;align-self:flex-start}
+.seg button{height:24px;padding:0 var(--s-3);background:transparent;border:0;color:var(--text-2);font:400 12px var(--ui);cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button[aria-pressed=true]{background:var(--surface-3);color:var(--brass-bright)}
+.seg .n{font:400 10px var(--mono);color:var(--text-3)}
+.seg button[aria-pressed=true] .n{color:var(--brass-dim)}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;max-height:420px;overflow-y:auto}
+li{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-3);background:var(--surface-1);min-height:44px;min-width:0}
+li+li{border-top:1px solid var(--line)}
+li:hover{background:var(--surface-2)}
+li .t{flex:1;min-width:0;font:500 17px/1.15 var(--display);overflow-wrap:anywhere}
+li.done .t{color:var(--text-2)}
+li .field{height:28px;font-size:13px}
+.icon-btn{background:transparent;border:1px solid transparent;color:var(--text-2);border-radius:var(--r-sm);height:24px;min-width:24px;padding:0 var(--s-2);font:400 12px var(--ui);cursor:pointer;white-space:nowrap}
+.icon-btn:hover{border-color:var(--line-strong);color:var(--brass-bright)}
+.icon-btn.act{border-color:var(--line-strong);color:var(--text)}
+.icon-btn.act:hover{border-color:var(--brass);color:var(--brass-bright)}
+.icon-btn.x{font-size:16px;line-height:1;padding:0}
+.icon-btn.x:hover{color:var(--danger-text);border-color:var(--st-failed)}
+.none{padding:var(--s-5) var(--s-4);text-align:center;color:var(--text-2);border:1px dashed var(--line-strong);border-radius:var(--r-md)}
+.fine{font-size:11.5px;color:var(--text-3)}
+.status{font-size:11px;font-family:var(--mono);color:var(--text-3)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="wordmark">Movie wheel</span>
+    <h1>Spin for <em>tonight's film.</em></h1>
+  </header>
+
+  <div class="main">
+    <section class="stage" aria-label="Wheel">
+      <div class="dial">
+        <div class="pointer" aria-hidden="true"><svg viewBox="0 0 20 26"><path d="M1 1h18L10 25z" fill="#c9a96a" stroke="#09090a" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+        <canvas id="wheel" role="img" aria-label="Wheel of unwatched movies"></canvas>
+        <div class="empty-wheel" id="emptyWheel" hidden><div><b id="emptyTitle">Add two films to begin</b><span id="emptyText">The wheel needs at least two unwatched movies to spin.</span></div></div>
+        <button class="hub" id="hub" type="button" aria-label="Spin the wheel">Spin</button>
+      </div>
+      <div class="filter" id="filter"></div>
+      <div class="spinrow">
+        <button class="btn solid big" id="spin" type="button">Spin the wheel</button>
+        <button class="btn quiet" id="sound" type="button" aria-pressed="true">Sound on</button>
+      </div>
+      <div id="result" aria-live="polite" style="width:100%;display:flex;justify-content:center"></div>
+    </section>
+
+    <section class="panel" aria-label="Movie list">
+      <form class="add" id="addForm" autocomplete="off">
+        <input class="field" id="newTitle" type="text" placeholder="Add a movie title" aria-label="Movie title" maxlength="120">
+        <button class="btn quiet" type="button" id="toggleGenres" aria-expanded="false" aria-controls="addGenres">Genres</button>
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <div id="addGenres" hidden></div>
+      <div class="field-error" id="err" role="alert" hidden></div>
+      <div class="seg" role="group" aria-label="Show">
+        <button type="button" id="tabTodo" aria-pressed="true">To watch <span class="n" id="nTodo">0</span></button>
+        <button type="button" id="tabDone" aria-pressed="false">Watched <span class="n" id="nDone">0</span></button>
+      </div>
+      <div id="listHost"></div>
+      <div class="fine" id="note">Mark a movie as watched to take it off the wheel. You can move it back any time.</div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  var TAU = Math.PI*2;
+  var C = {bg:'#09090a',s2:'#151518',s3:'#1b1b1f',line:'rgba(236,228,210,0.16)',text:'#ece6d8',brass:'#c9a96a',bright:'#e3c98f',dim:'#8c7647',onBrass:'#14110a'};
+  var movies = [];            // {id,title,watched,addedAt}
+  var tab = 'todo';
+  var editingId = null;
+  var rot = 0, spinning = false, winnerId = null, dirty = false;
+  var store = null;
+
+  var $ = function(id){return document.getElementById(id)};
+  var canvas = $('wheel'), ctx = canvas.getContext('2d');
+
+  /* ---------- storage: shared db when available, localStorage otherwise ---------- */
+  var LS = 'movie-wheel-v1';
+  function lsLoad(){ try{ return JSON.parse(localStorage.getItem(LS)||'[]'); }catch(e){ return []; } }
+  function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify(movies)); }catch(e){} }
+  function uid(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  var local = {
+    add:function(t,g){ movies.push({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now()}); lsSave(); refresh(); },
+    patch:function(id,p){ var m=movies.find(function(x){return x.id===id}); if(m){Object.assign(m,p); lsSave(); refresh();} },
+    remove:function(id){ movies=movies.filter(function(x){return x.id!==id}); lsSave(); refresh(); }
+  };
+  function dbStore(db){
+    var col = db.collection('movies');
+    col.onSnapshot(function(snap){
+      movies = snap.docs.map(function(d){ var v=d.data()||{}; return {id:d.id,title:String(v.title||''),watched:!!v.watched,genres:Array.isArray(v.genres)?v.genres.map(String):[],watchedAt:v.watchedAt||0,addedAt:v.addedAt||0}; });
+      refresh();
+    }, function(){ store = local; movies = lsLoad(); refresh(); });
+    return {
+      add:function(t,g){ return col.add({title:t,watched:false,genres:g||[],addedAt:Date.now()}); },
+      patch:function(id,p){ return col.doc(id).update(p); },
+      remove:function(id){ return col.doc(id).delete(); }
+    };
+  }
+
+  /* ---------- wheel drawing ---------- */
+  function todo(){ return movies.filter(function(m){return !m.watched}).sort(function(a,b){return a.addedAt-b.addedAt}); }
+
+  /* ---------- genres ---------- */
+  var PRESET=['Action','Comedy','Drama','Horror','Sci-fi','Thriller','Romance','Animation','Documentary','Fantasy','Mystery','Crime'];
+  var selected=[];                 // genre keys chosen as the wheel's filter (a movie matches when it has any of them)
+  var editGenres=[];               // genre names being edited on one row
+  function gkey(g){ return String(g).trim().toLowerCase(); }
+  function gname(g){ g=String(g).trim().replace(/\s+/g,' '); return g.charAt(0).toUpperCase()+g.slice(1); }
+  function gens(m){ return Array.isArray(m.genres)?m.genres:[]; }
+  function pool(){
+    var t=todo(); if(!selected.length) return t;
+    return t.filter(function(m){ return gens(m).some(function(g){ return selected.indexOf(gkey(g))>=0; }); });
+  }
+  function genreCounts(){          // genres on unwatched movies: [{key,name,n}] by name
+    var map={};
+    todo().forEach(function(m){ gens(m).forEach(function(g){ var k=gkey(g); if(!k) return; (map[k]=map[k]||{key:k,name:gname(g),n:0}).n++; }); });
+    return Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return a.name.localeCompare(b.name)});
+  }
+  function allGenreNames(){        // choices when editing: presets, anything already used, anything added on this row
+    var seen={}, out=[];
+    PRESET.concat(movies.reduce(function(a,m){return a.concat(gens(m))},[]), editGenres).forEach(function(g){
+      var k=gkey(g); if(k && !seen[k]){ seen[k]=1; out.push(gname(g)); }
+    });
+    return out.sort(function(a,b){return a.localeCompare(b)});
+  }
+  // Genre buttons plus a box to type a new one. Toggles names in `list` (mutated in place).
+  function genrePicker(list){
+    var wrap=document.createElement('div'); wrap.className='picker';
+    var chips=document.createElement('div'); chips.className='gchips'; chips.style.justifyContent='flex-start';
+    var has=function(name){ return list.some(function(x){return gkey(x)===gkey(name)}); };
+    var addChip=function(name,on){
+      var b=document.createElement('button'); b.type='button'; b.className='gchip'; b.textContent=name; b.setAttribute('aria-pressed',String(on));
+      b.onclick=function(){
+        var k=gkey(name), i=list.findIndex(function(g){return gkey(g)===k});
+        if(i>=0){ list.splice(i,1); b.setAttribute('aria-pressed','false'); } else { list.push(name); b.setAttribute('aria-pressed','true'); }
+      };
+      chips.append(b); return b;
+    };
+    allGenreNames().forEach(function(g){ addChip(g, has(g)); });
+    var cu=document.createElement('div'); cu.className='editrow';
+    var ci=document.createElement('input'); ci.className='field'; ci.placeholder='Type a new genre'; ci.maxLength=24; ci.setAttribute('aria-label','New genre');
+    var addCustom=function(){
+      var g=gname(ci.value); if(!g) return; ci.value='';
+      var ex=Array.prototype.find.call(chips.children,function(c){return gkey(c.textContent)===gkey(g)});
+      if(ex){ if(ex.getAttribute('aria-pressed')!=='true') ex.click(); } else { addChip(g,false).click(); }
+    };
+    ci.onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); addCustom(); } };
+    var ab=btn('Add genre','icon-btn act',addCustom);
+    cu.append(ci,ab); wrap.append(chips,cu);
+    return wrap;
+  }
+  function renderFilter(){
+    var host=$('filter'), counts=genreCounts();
+    selected=selected.filter(function(k){ return counts.some(function(c){return c.key===k}); });
+    host.innerHTML='';
+    if(!counts.length){
+      var h=document.createElement('div'); h.className='fine'; h.style.textAlign='center';
+      h.textContent='Click Edit on a movie to give it genres, then you can spin one genre at a time.';
+      host.append(h); return;
+    }
+    var e=document.createElement('span'); e.className='eyebrow'; e.textContent='Spin from'; host.append(e);
+    var row=document.createElement('div'); row.className='gchips'; row.setAttribute('role','group'); row.setAttribute('aria-label','Genres on the wheel');
+    var all=document.createElement('button'); all.type='button'; all.className='gchip'; all.textContent='All genres';
+    all.setAttribute('aria-pressed',String(!selected.length)); all.disabled=spinning;
+    all.onclick=function(){ selected=[]; filterChanged(); };
+    row.append(all);
+    counts.forEach(function(c){
+      var b=document.createElement('button'); b.type='button'; b.className='gchip'; b.disabled=spinning;
+      b.setAttribute('aria-pressed',String(selected.indexOf(c.key)>=0));
+      b.append(document.createTextNode(c.name+' '));
+      var n=document.createElement('span'); n.className='n'; n.textContent=c.n; b.append(n);
+      b.onclick=function(){ var i=selected.indexOf(c.key); if(i>=0) selected.splice(i,1); else selected.push(c.key); filterChanged(); };
+      row.append(b);
+    });
+    host.append(row);
+    var note=document.createElement('div'); note.className='status';
+    var p=pool().length, all_=todo().length;
+    note.textContent = selected.length ? p+' of '+all_+' movies on the wheel' : all_+' movies on the wheel';
+    host.append(note);
+  }
+  function filterChanged(){ winnerId=null; $('result').innerHTML=''; renderFilter(); syncControls(); draw(); render(); }
+  function fit(text, maxW){
+    if(ctx.measureText(text).width<=maxW) return text;
+    var s=text; while(s.length>1 && ctx.measureText(s+'…').width>maxW) s=s.slice(0,-1);
+    return s.trimEnd()+'…';
+  }
+  function draw(){
+    var size = canvas.clientWidth || 460, dpr = window.devicePixelRatio||1;
+    if(canvas.width!==Math.round(size*dpr)){ canvas.width=Math.round(size*dpr); canvas.height=Math.round(size*dpr); }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,size,size);
+    var cx=size/2, cy=size/2, R=size/2-14, items=pool(), n=items.length;
+    // outer ring
+    ctx.beginPath(); ctx.arc(cx,cy,R+8,0,TAU); ctx.strokeStyle=C.dim; ctx.lineWidth=1; ctx.stroke();
+    if(n<2){
+      ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.fillStyle=C.s2; ctx.fill(); ctx.strokeStyle=C.line; ctx.stroke();
+      return;
+    }
+    var seg=TAU/n;
+    var fs = Math.max(10, Math.min(16, 15 - n*0.12));
+    ctx.font = '500 '+fs+'px Inter, "Segoe UI", sans-serif';
+    for(var i=0;i<n;i++){
+      var a0=rot+i*seg, a1=a0+seg, win = items[i].id===winnerId;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a0,a1); ctx.closePath();
+      ctx.fillStyle = win ? C.brass : (i%2? C.s3 : C.s2); ctx.fill();
+      ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.stroke();
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(a0+seg/2);
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillStyle = win ? C.onBrass : C.text;
+      ctx.fillText(fit(items[i].title, R-80), R-16, 0);
+      ctx.restore();
+    }
+    // rim ticks
+    for(var j=0;j<n;j++){
+      var a=rot+j*seg;
+      ctx.beginPath(); ctx.arc(cx+Math.cos(a)*(R+8), cy+Math.sin(a)*(R+8), 2.2, 0, TAU); ctx.fillStyle=C.brass; ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.stroke();
+  }
+  function indexAtPointer(n){
+    var seg=TAU/n, a=((-Math.PI/2-rot)%TAU+TAU)%TAU;
+    return Math.min(n-1, Math.floor(a/seg));
+  }
+
+  /* ---------- sound (Web Audio, synthesized, no files) ---------- */
+  var actx=null, master=null, muted=false;
+  try{ muted = localStorage.getItem('movie-wheel-muted')==='1'; }catch(e){}
+  function audio(){
+    if(muted) return null;
+    try{
+      if(!actx){
+        var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null;
+        actx=new AC(); master=actx.createGain(); master.gain.value=0.7;
+        var comp=actx.createDynamicsCompressor(); master.connect(comp); comp.connect(actx.destination);
+      }
+      if(actx.state==='suspended') actx.resume();
+      return actx;
+    }catch(e){ return null; }
+  }
+  function noiseBuf(a,dur){
+    var b=a.createBuffer(1,Math.floor(a.sampleRate*dur),a.sampleRate), d=b.getChannelData(0);
+    for(var i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b;
+  }
+  // a wooden peg flicking the pointer: a short bandpassed click plus a tiny tone
+  function tick(speed){            // speed 0..1
+    var a=audio(); if(!a) return; var t=a.currentTime;
+    var src=a.createBufferSource(); src.buffer=noiseBuf(a,0.05);
+    var bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800+speed*1400+Math.random()*200; bp.Q.value=6;
+    var g=a.createGain(); var vol=0.25+speed*0.35;
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    src.connect(bp); bp.connect(g); g.connect(master); src.start(t);
+    var o=a.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(900+speed*500,t);
+    var og=a.createGain(); og.gain.setValueAtTime(0.12,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+    o.connect(og); og.connect(master); o.start(t); o.stop(t+0.06);
+    var p=document.querySelector('.pointer'); if(p){ p.classList.remove('flick'); void p.offsetWidth; p.classList.add('flick'); }
+  }
+  // rising air sweep as the wheel is released
+  function whoosh(){
+    var a=audio(); if(!a) return; var t=a.currentTime;
+    var src=a.createBufferSource(); src.buffer=noiseBuf(a,0.8);
+    var f=a.createBiquadFilter(); f.type='bandpass'; f.Q.value=2;
+    f.frequency.setValueAtTime(300,t); f.frequency.exponentialRampToValueAtTime(2400,t+0.5);
+    var g=a.createGain(); g.gain.setValueAtTime(0.001,t); g.gain.linearRampToValueAtTime(0.22,t+0.2); g.gain.exponentialRampToValueAtTime(0.001,t+0.75);
+    src.connect(f); f.connect(g); g.connect(master); src.start(t);
+  }
+  // brass bell chord (C major add 9) with a soft low thump
+  function chime(){
+    var a=audio(); if(!a) return; var t=a.currentTime+0.05;
+    [[523.25,0.30],[659.25,0.22],[783.99,0.22],[1046.5,0.16],[1318.5,0.08],[1567.98,0.05]].forEach(function(p,i){
+      var o=a.createOscillator(); o.type='sine'; o.frequency.value=p[0];
+      var o2=a.createOscillator(); o2.type='sine'; o2.frequency.value=p[0]*2.76; // inharmonic partial gives the metallic ring
+      var g=a.createGain(), g2=a.createGain(), st=t+i*0.045;
+      g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(p[1]*0.6,st+0.012); g.gain.exponentialRampToValueAtTime(0.0001,st+2.4);
+      g2.gain.setValueAtTime(0.0001,st); g2.gain.exponentialRampToValueAtTime(p[1]*0.08,st+0.005); g2.gain.exponentialRampToValueAtTime(0.0001,st+0.6);
+      o.connect(g); g.connect(master); o2.connect(g2); g2.connect(master);
+      o.start(st); o.stop(st+2.5); o2.start(st); o2.stop(st+0.7);
+    });
+    var k=a.createOscillator(); k.type='sine'; k.frequency.setValueAtTime(140,t); k.frequency.exponentialRampToValueAtTime(55,t+0.25);
+    var kg=a.createGain(); kg.gain.setValueAtTime(0.5,t); kg.gain.exponentialRampToValueAtTime(0.001,t+0.35);
+    k.connect(kg); kg.connect(master); k.start(t); k.stop(t+0.4);
+  }
+
+  /* ---------- spin ---------- */
+  function spin(){
+    var items=pool(), n=items.length;
+    if(spinning||n<2) return;
+    spinning=true; winnerId=null; $('result').innerHTML=''; syncControls();
+    whoosh();
+    var lastIdx=indexAtPointer(n), lastRot=rot, lastT=performance.now();
+    var seg=TAU/n, target=Math.floor(Math.random()*n), off=0.12+Math.random()*0.76;
+    var a=(target+off)*seg;                       // angle (in wheel frame) that must sit under the pointer
+    var end0=-Math.PI/2-a;
+    var start=rot, delta=(((end0-start)%TAU)+TAU)%TAU + TAU*(5+Math.floor(Math.random()*3));
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var dur = reduce ? 900 : 5600, t0=performance.now();
+    (function frame(now){
+      var t=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-t,4);
+      rot=start+delta*e; draw();
+      var cur=indexAtPointer(n);
+      if(cur!==lastIdx){
+        var dt=Math.max(1,now-lastT), w=Math.abs(rot-lastRot)/dt*1000;   // rad/s
+        tick(Math.min(1,w/14)); lastIdx=cur;
+      }
+      lastRot=rot; lastT=now;
+      if(t<1){ requestAnimationFrame(frame); } else {
+        spinning=false;
+        var idx=indexAtPointer(n); winnerId=items[idx].id;
+        chime();
+        draw(); showResult(items[idx]); syncControls();
+        if(dirty){ dirty=false; refresh(); }
+      }
+    })(t0);
+  }
+  function showResult(m){
+    var box=$('result'); box.innerHTML='';
+    var r=document.createElement('div'); r.className='result';
+    var e=document.createElement('span'); e.className='eyebrow'; e.style.color='var(--brass-dim)'; e.textContent='Tonight you watch';
+    var h=document.createElement('h2'); h.textContent=m.title;
+    var row=document.createElement('div'); row.className='row';
+    var b1=document.createElement('button'); b1.className='btn solid'; b1.textContent='Mark as watched';
+    b1.onclick=function(){ winnerId=null; box.innerHTML=''; store.patch(m.id,{watched:true,watchedAt:Date.now()}); };
+    var b2=document.createElement('button'); b2.className='btn'; b2.textContent='Spin again';
+    b2.onclick=function(){ spin(); };
+    var b3=document.createElement('button'); b3.className='btn quiet'; b3.textContent='Keep on the list';
+    b3.onclick=function(){ winnerId=null; box.innerHTML=''; draw(); };
+    row.append(b1,b2,b3); r.append(e,h,row); box.append(r);
+  }
+
+  /* ---------- list ---------- */
+  function showErr(msg){ var e=$('err'); e.hidden=!msg; e.textContent=msg||''; }
+  function render(){
+    var todoList=todo(), done=movies.filter(function(m){return m.watched}).sort(function(a,b){return (b.watchedAt||0)-(a.watchedAt||0)});
+    $('nTodo').textContent=todoList.length; $('nDone').textContent=done.length;
+    $('tabTodo').setAttribute('aria-pressed',tab==='todo'); $('tabDone').setAttribute('aria-pressed',tab==='done');
+    var items = tab==='todo'? todoList : done;
+    var host=$('listHost'); host.innerHTML='';
+    if(!items.length){
+      var d=document.createElement('div'); d.className='none';
+      d.textContent = tab==='todo' ? 'Nothing left to watch. Add a movie above.' : 'Nothing watched yet. Mark a film as watched and it moves here.';
+      host.append(d); return;
+    }
+    var ul=document.createElement('ul');
+    items.forEach(function(m){
+      var li=document.createElement('li'); if(m.watched) li.className='done';
+      if(editingId===m.id){
+        var inp=document.createElement('input'); inp.className='field'; inp.value=m.title; inp.maxLength=120; inp.setAttribute('aria-label','Edit title');
+        var save=function(){
+          var v=inp.value.trim(); editingId=null;
+          if(!v){ render(); return; }
+          if(v.toLowerCase()!==m.title.toLowerCase() && movies.some(function(o){return o.id!==m.id && o.title.toLowerCase()===v.toLowerCase()})) v=m.title;
+          store.patch(m.id,{title:v,genres:editGenres.slice()});
+        };
+        var cancel=function(){editingId=null;render();};
+        inp.onkeydown=function(e){ if(e.key==='Enter') save(); if(e.key==='Escape') cancel(); };
+        var ed=document.createElement('div'); ed.className='edit';
+        var top=document.createElement('div'); top.className='editrow';
+        top.append(inp,btn('Save','icon-btn act',save),btn('Cancel','icon-btn',cancel));
+        var lab=document.createElement('span'); lab.className='eyebrow'; lab.textContent='Genres';
+        ed.append(top,lab,genrePicker(editGenres)); li.className='editing'; li.append(ed); ul.append(li);
+        setTimeout(function(){inp.focus();inp.select();},0); return;
+      }
+      var tw=document.createElement('div'); tw.className='tw';
+      var t=document.createElement('span'); t.className='t'; t.textContent=m.title; tw.append(t);
+      if(gens(m).length){
+        var gl=document.createElement('div'); gl.className='gl';
+        gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){
+          var c=document.createElement('span'); c.className='chip'+(selected.indexOf(gkey(g))>=0?' on':''); c.textContent=gname(g); gl.append(c);
+        });
+        tw.append(gl);
+      }
+      li.append(tw);
+      if(m.watched){
+        li.append(btn('Move back to list','icon-btn act',function(){store.patch(m.id,{watched:false});}));
+      } else {
+        li.append(btn('✓ Mark watched','icon-btn act',function(){store.patch(m.id,{watched:true,watchedAt:Date.now()});}));
+        li.append(btn('Edit','icon-btn',function(){editingId=m.id; editGenres=gens(m).map(gname); render();}));
+      }
+      var x=btn('×','icon-btn x',function(){store.remove(m.id);}); x.setAttribute('aria-label','Remove '+m.title); li.append(x);
+      ul.append(li);
+    });
+    host.append(ul);
+  }
+  function btn(label,cls,fn){ var b=document.createElement('button'); b.type='button'; b.className=cls; b.textContent=label; b.onclick=fn; return b; }
+
+  function syncControls(){
+    var n=pool().length, can=n>=2&&!spinning;
+    $('spin').disabled=!can; $('hub').disabled=!can;
+    $('spin').textContent = spinning ? 'Spinning' : 'Spin the wheel';
+    $('emptyWheel').hidden = n>=2;
+    var f=selected.length>0;
+    $('emptyTitle').textContent = f ? 'Not enough movies in these genres' : 'Add two films to begin';
+    $('emptyText').textContent = f ? 'Pick more genres, or choose All genres.' : 'The wheel needs at least two unwatched movies to spin.';
+  }
+  function refresh(){
+    if(spinning){ dirty=true; return; }
+    if(winnerId && !pool().some(function(m){return m.id===winnerId})) { winnerId=null; $('result').innerHTML=''; }
+    renderFilter(); render(); syncControls(); draw();
+  }
+
+  /* ---------- events ---------- */
+  $('spin').onclick=spin; $('hub').onclick=spin;
+  function syncSound(){ var b=$('sound'); b.textContent=muted?'Sound off':'Sound on'; b.setAttribute('aria-pressed',String(!muted)); }
+  $('sound').onclick=function(){ muted=!muted; try{localStorage.setItem('movie-wheel-muted',muted?'1':'0');}catch(e){} syncSound(); if(!muted){ audio(); tick(.4); } };
+  syncSound();
+  $('tabTodo').onclick=function(){tab='todo';editingId=null;render();};
+  $('tabDone').onclick=function(){tab='done';editingId=null;render();};
+  $('addForm').onsubmit=function(e){
+    e.preventDefault();
+    var v=$('newTitle').value.trim(); if(!v) return;
+    if(movies.some(function(m){return m.title.toLowerCase()===v.toLowerCase()})){ showErr('That movie is already on the list.'); return; }
+    showErr(''); $('newTitle').value=''; tab='todo'; store.add(v,newGenres.slice());
+    newGenres.length=0; $('addGenres').hidden=true; $('toggleGenres').setAttribute('aria-expanded','false'); syncAddGenres();
+  };
+  var newGenres=[];
+  function syncAddGenres(){ var n=newGenres.length; $('toggleGenres').textContent = n? 'Genres ('+n+')' : 'Genres'; }
+  $('toggleGenres').onclick=function(){
+    var host=$('addGenres'), open=host.hidden;
+    host.hidden=!open; this.setAttribute('aria-expanded',String(open));
+    if(open){ host.innerHTML=''; host.append(genrePicker(newGenres)); host.addEventListener('click',syncAddGenres); }
+  };
+  $('newTitle').oninput=function(){showErr('')};
+  window.addEventListener('resize',draw);
+
+  /* ---------- boot ---------- */
+  store = local; movies = lsLoad(); refresh();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+  (async function(){
+    try{
+      if(!window.claude||!claude.use) return;
+      var db = await claude.use('db');
+      if(db){ movies=[]; store = dbStore(db); }
+    }catch(e){}
+  })();
+})();
+</script>
+</body>
+</html>
