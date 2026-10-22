@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09090a">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Movie Wheel">
 <title>Movie Wheel</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -25,7 +30,7 @@
 }
 *{box-sizing:border-box}
 ::selection{background:var(--selection)}
-body{background:var(--bg);color:var(--text);font:400 13px/1.5 var(--ui);letter-spacing:.005em;padding-inline:var(--s-5);padding-block:var(--s-5) var(--s-7);min-height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 13px/1.5 var(--ui);letter-spacing:.005em;padding-inline:var(--s-5);padding-block:var(--s-5) var(--s-7);min-height:100%}
 body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(#ece4d20b 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:radial-gradient(ellipse at 35% 40%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 35% 40%,#000 0%,transparent 70%)}
 .wrap{position:relative;max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-5)}
 header{display:flex;flex-direction:column;gap:var(--s-2)}
@@ -175,6 +180,170 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
 .kv .k{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
 .kv .v{font:500 18px/1.2 var(--display);overflow-wrap:anywhere}
 .kv .m{font:400 11px var(--mono);color:var(--text-3)}
+
+/* ================= phone-first layer: sizes, the bottom tab bar, sheets, rows, the new screens ================= */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:root{--tabbar-h:64px}
+button,a,summary,[role=button],input,select,textarea{touch-action:manipulation}
+button{-webkit-tap-highlight-color:transparent}
+body{padding-top:calc(var(--s-5) + env(safe-area-inset-top,0px))}
+body.lock{overflow:hidden}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn svg{flex:none}
+/* Text people have to read uses text-2 (6.4:1). text-3 stays for placeholders and disabled things. */
+.eyebrow,.chip.len,.fine,.status,.gchip .n,.seg .n,.opt .om,.kv .k,.kv .m{color:var(--text-2)}
+.gchip[aria-pressed=true] .n{color:var(--brass)}
+
+/* nav: the top links on a computer, the bottom tab bar on a phone */
+.tabbar{display:none}
+.tabbar a svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+[data-view][hidden]{display:none!important}
+
+/* filters: one button and the filters that are on */
+.fbtn{display:inline-flex;align-items:center;gap:8px}
+.fbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.fbtn .badge{min-width:20px;height:20px;border-radius:99px;background:var(--brass);color:var(--on-brass);font:600 11px/20px var(--ui);text-align:center;padding:0 6px}
+.frow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stage .frow{justify-content:center}
+.afchip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 8px 0 12px;border-radius:var(--r-pill);border:1px solid var(--line-brass);background:var(--brass-wash);color:var(--brass-bright);font:400 13px var(--ui);cursor:pointer}
+.afchip .x{font-size:16px;line-height:1;color:var(--text-2)}
+.afchip:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.lfilter{display:flex;flex-direction:column;gap:var(--s-2)}
+
+/* sheets: a panel that slides up from the bottom on a phone, a dialog in the middle on a computer */
+.sheet-wrap{position:fixed;inset:0;z-index:100}
+.sheet-scrim{position:absolute;inset:0;background:var(--scrim);animation:fadein 200ms var(--ease)}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:90dvh;display:flex;flex-direction:column;background:var(--surface-1);border:1px solid var(--line-strong);border-bottom:0;border-radius:16px 16px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.55);animation:sheetup 280ms var(--ease);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet .grab{flex:none;width:40px;height:4px;border-radius:4px;background:var(--line-strong);margin:8px auto 0}
+.sheet-head{flex:none;display:flex;align-items:center;gap:8px;padding:6px 8px 4px 20px}
+.sheet-head h2{flex:1;min-width:0;margin:0;font:500 26px/1.2 var(--display);overflow-wrap:anywhere}
+.sheet-head .icon-btn{font-size:22px}
+.sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:8px 20px 16px;display:flex;flex-direction:column;gap:20px;min-height:0}
+.sheet-foot{flex:none;display:flex;gap:var(--s-2);padding:12px 20px 16px;border-top:1px solid var(--line)}
+.sheet-foot .btn{flex:1}
+.sheet-foot .btn.solid{flex:2}
+.sec{display:flex;flex-direction:column;gap:var(--s-2)}
+.sec>h3{margin:0;font:500 11px var(--ui);letter-spacing:.18em;text-transform:uppercase;color:var(--text-2)}
+.sheet .gchips{justify-content:flex-start;gap:8px}
+.sheet .seg{display:flex;width:100%}
+.sheet .seg button{flex:1;justify-content:center}
+.sheet .picker .gchips{gap:8px}
+.sheet .field{width:100%}
+.sheet .sec>.field{flex:none}
+.sheet textarea.field{min-height:110px}
+.sheet .row2{display:flex;gap:var(--s-2)}
+.sheet .row2 .field.num{flex:0 0 120px}
+.sheet .mtitle{font:500 30px/1.15 var(--display);color:var(--brass-bright);overflow-wrap:anywhere}
+.sheet .mmeta{color:var(--text-2);font-size:14px;margin-top:-12px}
+.sheet .linkbtn{align-self:flex-start;background:none;border:0;padding:12px 0;color:var(--text-2);font:400 14px var(--ui);text-decoration:underline;cursor:pointer}
+.sheet .danger{align-self:flex-start;background:none;border:1px solid transparent;border-radius:var(--r-sm);padding:0 12px;min-height:44px;color:var(--danger-text);font:400 14px var(--ui);cursor:pointer}
+.sheet .danger.sure{border-color:var(--st-failed);background:var(--failed-wash,#b5685e1a)}
+.sheet .count{font:400 12px var(--mono);color:var(--text-2)}
+@keyframes sheetup{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes sheetpop{from{opacity:0;transform:translate(-50%,-47%)}to{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@media(min-width:821px){
+  .sheet{left:50%;right:auto;bottom:auto;top:50%;width:min(560px,92vw);max-height:84vh;transform:translate(-50%,-50%);border:1px solid var(--line-strong);border-radius:var(--r-lg);animation:sheetpop 220ms var(--ease);padding-bottom:0}
+  .sheet .grab{display:none}
+}
+
+/* the add box */
+.add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s-2);align-items:stretch}
+.add .btn.quiet{grid-column:1/-1;justify-self:start}
+
+/* a movie in a list: the title gets the full width, then its details, then what you can do */
+#listHost ul{max-height:none;overflow:visible}
+li.row{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:16px;min-height:0}
+li.row .t{font:500 21px/1.2 var(--display);overflow-wrap:break-word;hyphens:manual}
+li.row.done .t{color:var(--text)}
+li.row .gl{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+li.row .review{font:italic 400 17px/1.45 var(--display);color:var(--text);max-width:62ch}
+li.row .acts{display:flex;gap:var(--s-2);margin-top:2px}
+li.row .acts .btn{padding:0 16px}
+li.row .acts .btn.main{flex:1}
+.stars .star{font-size:20px;padding:4px 3px;min-width:28px;min-height:32px;line-height:1}
+.stars.big .star{font-size:42px;min-width:52px;min-height:56px;padding:4px}
+
+/* reviews */
+.rv{display:flex;flex-direction:column;gap:var(--s-4);max-width:760px}
+.rv .tools{display:flex;flex-direction:column;gap:var(--s-3)}
+.rv .rtop{display:flex;gap:var(--s-3);flex-wrap:wrap;align-items:center}
+.rv .seg{align-self:flex-start}
+.rv input[type=search]{width:100%;flex:none;-webkit-appearance:none;appearance:none}
+.rcard{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-4);display:flex;flex-direction:column;gap:10px}
+.rcard .t{font:500 24px/1.2 var(--display);overflow-wrap:break-word}
+.rcard .rmeta{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;color:var(--text-2);font-size:13px}
+.rcard .review{font:italic 400 19px/1.45 var(--display);color:var(--text);max-width:62ch}
+.rcard .acts{display:flex;gap:var(--s-2)}
+.rcard .gl{display:flex;flex-wrap:wrap;gap:6px}
+.waiting{background:var(--brass-wash);border:1px solid var(--line-brass);border-radius:var(--r-lg);padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-3)}
+.waiting h2{margin:0;font:500 24px/1.2 var(--display)}
+.waiting .wrow{display:flex;gap:var(--s-3);align-items:center;justify-content:space-between;flex-wrap:wrap}
+.waiting .wrow .t{font:500 19px/1.2 var(--display);flex:1 1 160px;min-width:0;overflow-wrap:break-word}
+
+/* ---------- phones, and anything touched with a finger ---------- */
+@media(max-width:820px),(pointer:coarse){
+  body{font-size:15px}
+  .btn{height:44px;font-size:14px;padding:0 16px}
+  .btn.big{height:52px;font-size:15px}
+  .icon-btn{height:44px;min-width:44px;font-size:14px;padding:0 12px}
+  .field{height:48px;font-size:16px}
+  textarea.field{font-size:16px;height:auto;min-height:96px}
+  .seg button{height:44px;font-size:14px;padding:0 16px}
+  .gchip{height:auto;min-height:40px;padding:0 14px;font-size:14px}
+  .chip{font-size:12px;padding:5px 10px}
+  .chip.len{padding-inline:0}
+  .fine{font-size:13px}
+  .status{font-size:12px}
+  .hub{width:72px;height:72px;font-size:11px}
+  .stars .star{font-size:28px;padding:8px 4px;min-width:44px;min-height:44px}
+  .eyebrow,.kv .k,.sec>h3,.sheet .count,.gchip .n,.seg .n,.opt .om,.fbtn .badge,.tabbar a{font-size:12px}
+  .picker .field{height:48px;font-size:16px}
+  .picker .editrow .icon-btn{height:48px}
+  .opt{padding:12px var(--s-3)}
+  .opt .ot{font-size:18px}
+}
+@media(max-width:820px){
+  body{padding-inline:var(--s-4);padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom,0px) + var(--s-5))}
+  .wrap{gap:var(--s-4)}
+  h1{font-size:30px}
+  .nav{display:none}
+  .topbar{justify-content:flex-start}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgb(14 14 16/.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--line-strong);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+  .tabbar a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;color:var(--text-2);text-decoration:none;font-size:11px;letter-spacing:.02em;border-radius:var(--r-md)}
+  .tabbar a[aria-current=page]{color:var(--brass-bright);background:var(--surface-2)}
+  .tabbar a:focus-visible{outline:2px solid var(--brass);outline-offset:-2px}
+  .main[data-screen=wheel] .panel{display:none}
+  .main[data-screen=list] .stage{display:none}
+  .panel{padding:var(--s-3)}
+  .stage .frow{gap:var(--s-2)}
+  /* dashboard */
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-2)}
+  .tile{padding:var(--s-3)}
+  .tile .big{font-size:36px}
+  .tile .big small{font-size:13px}
+  .tile .sub{font-size:12px}
+  .card{padding:var(--s-4)}
+  .bar{grid-template-columns:minmax(0,1fr) auto;gap:6px var(--s-3)}
+  .bar .lab{font-size:14px;color:var(--text)}
+  .bar .track{grid-column:1/-1;grid-row:2;height:8px}
+  .bar .val{font-size:12px}
+  .lead{font-size:15px}
+  /* the reviews screen */
+  .rcard{padding:var(--s-4)}
+}
+@media(prefers-reduced-motion:reduce){.sheet,.sheet-scrim{animation:none}}
+.sr{font-size:18px;letter-spacing:2px;color:var(--text-3);white-space:nowrap}
+.sr .on{color:var(--brass)}
+@media(max-width:820px){
+  body[data-view=chat]{padding:env(safe-area-inset-top,0px) 0 0}
+  body[data-view=chat] header{display:none}
+  body[data-view=chat] .wrap{gap:0;max-width:none}
+  body[data-view=chat] .ch{max-width:none;gap:0;height:calc(100dvh - var(--tabbar-h) - env(safe-area-inset-bottom,0px) - env(safe-area-inset-top,0px))}
+  body[data-view=chat] .ch .conv{border:0;border-radius:0;background:var(--bg);padding:var(--s-2) var(--s-3) var(--s-3)}
+  body[data-view=chat].typing .tabbar{display:none}
+  body[data-view=chat].typing .ch{height:calc(100dvh - env(safe-area-inset-top,0px))}
+}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -185,9 +354,10 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     <div class="topbar">
       <span class="wordmark">Movie wheel</span>
       <nav class="nav" aria-label="Pages">
-        <a href="#wheel" id="navWheel" aria-current="page">Wheel</a>
-        <a href="#dashboard" id="navDash">Dashboard</a>
-        <a href="#chat" id="navChat" hidden>Chat</a>
+        <a href="#wheel" data-view="wheel" aria-current="page">Wheel</a>
+        <a href="#dashboard" data-view="dash">Dashboard</a>
+        <a href="#reviews" data-view="reviews">Reviews</a>
+        <a href="#chat" data-view="chat" hidden>Chat</a>
       </nav>
     </div>
     <h1 id="h1">Spin for <em>tonight's film.</em></h1>
@@ -211,9 +381,9 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
 
     <section class="panel" aria-label="Movie list">
       <form class="add" id="addForm" autocomplete="off">
-        <div class="sw"><input class="field" id="newTitle" type="text" placeholder="Add a movie title" aria-label="Movie title" maxlength="120"></div>
-        <button class="btn quiet" type="button" id="toggleGenres" aria-expanded="false" aria-controls="addGenres">Genres</button>
+        <div class="sw"><input class="field" id="newTitle" type="text" placeholder="Add a movie title" aria-label="Movie title" maxlength="120" enterkeyhint="done"></div>
         <button class="btn" type="submit">Add</button>
+        <button class="btn quiet" type="button" id="toggleGenres" aria-expanded="false" aria-controls="addGenres">+ Genres</button>
       </form>
       <div class="fine" id="pickInfo" hidden></div>
       <div id="addGenres" hidden></div>
@@ -222,7 +392,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
         <button type="button" id="tabTodo" aria-pressed="true">To watch <span class="n" id="nTodo">0</span></button>
         <button type="button" id="tabDone" aria-pressed="false">Watched <span class="n" id="nDone">0</span></button>
       </div>
-      <div class="wfilter" id="wfilter" hidden></div>
+      <div class="lfilter" id="lfilter" hidden></div>
       <div id="listHost"></div>
       <div class="fine" id="note">Mark a movie as watched to take it off the wheel. You can move it back any time.</div>
       <div class="backup" id="backup" hidden>
@@ -236,8 +406,17 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   </div>
 
   <div class="dash" id="viewDash" hidden></div>
+  <div id="viewReviews" hidden></div>
   <div id="viewChat" hidden></div>
 </div>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="#wheel" data-view="wheel" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6L6 18"/></svg><span>Wheel</span></a>
+  <a href="#list" data-view="list"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6.5h12M8 12h12M8 17.5h12M4 6.5h.01M4 12h.01M4 17.5h.01"/></svg><span>List</span></a>
+  <a href="#dashboard" data-view="dash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>Dashboard</span></a>
+  <a href="#reviews" data-view="reviews"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.8 6.9 19.5l1-5.7-4.1-4 5.7-.8z"/></svg><span>Reviews</span></a>
+  <a href="#chat" data-view="chat" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.4-4.3A7.5 7.5 0 1 1 20 12z"/></svg><span>R7</span></a>
+</nav>
 
 <script src="config.js"></script>
 <script src="sync.js"></script>
@@ -414,36 +593,145 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     wrap.append(chips,cu);
     return wrap;
   }
-  // A labelled row of filter chips: "All" plus one chip per item with its count. `sel` is the array of chosen keys (changed in place).
-  function chipGroup(host,label,aria,allText,items,sel,onChange,disabled){
-    host.append(el('span','eyebrow',label));
-    var row=el('div','gchips'); row.setAttribute('role','group'); row.setAttribute('aria-label',aria);
-    var all=el('button','gchip',allText); all.type='button'; all.setAttribute('aria-pressed',String(!sel.length)); all.disabled=!!disabled;
-    all.onclick=function(){ sel.length=0; onChange(); };
-    row.append(all);
-    items.forEach(function(c){
-      var b=el('button','gchip'); b.type='button'; b.disabled=!!disabled;
-      b.setAttribute('aria-pressed',String(sel.indexOf(c.key)>=0));
-      b.append(document.createTextNode(c.name+' '), el('span','n',c.n));
-      b.onclick=function(){ var i=sel.indexOf(c.key); if(i>=0) sel.splice(i,1); else sel.push(c.key); onChange(); };
-      row.append(b);
-    });
-    host.append(row);
+  /* ---------- sheets: a panel that slides up on a phone (a dialog on a computer) ---------- */
+  var sheetNow=null;
+  function openSheet(o){
+    if(sheetNow) sheetNow.close('replaced');
+    var prev=document.activeElement, wrap=el('div','sheet-wrap'), scrim=el('div','sheet-scrim'), sh=el('div','sheet');
+    var tid='sh'+Math.random().toString(36).slice(2,7);
+    sh.setAttribute('role','dialog'); sh.setAttribute('aria-modal','true'); sh.setAttribute('aria-labelledby',tid);
+    var head=el('div','sheet-head'), h=el('h2',null,o.title); h.id=tid;
+    var x=el('button','icon-btn','×'); x.type='button'; x.setAttribute('aria-label','Close');
+    head.append(h,x);
+    var body=el('div','sheet-body'), foot=el('div','sheet-foot');
+    sh.append(el('span','grab'),head,body,foot); wrap.append(scrim,sh); document.body.append(wrap); document.body.classList.add('lock');
+    var closed=false, handle={body:body,foot:foot,sheet:sh};
+    function onKey(e){
+      if(e.key==='Escape'){ e.stopPropagation(); close('later'); return; }
+      if(e.key!=='Tab') return;
+      var f=[].filter.call(sh.querySelectorAll('button,input,select,textarea,a[href]'),function(n){return !n.disabled && n.offsetParent!==null});
+      if(!f.length) return;
+      var first=f[0], last=f[f.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+    function close(reason){
+      if(closed) return; closed=true;
+      document.removeEventListener('keydown',onKey,true);
+      wrap.remove(); if(sheetNow===handle) sheetNow=null;
+      if(!sheetNow) document.body.classList.remove('lock');
+      try{
+        var back = (prev && prev!==document.body && prev.focus && document.contains(prev)) ? prev : (o.restore ? document.querySelector(o.restore) : null);
+        if(back) back.focus({preventScroll:true});
+      }catch(e){}
+      if(o.onClose) o.onClose(reason||'closed');
+    }
+    document.addEventListener('keydown',onKey,true);
+    scrim.onclick=function(){ close('later'); }; x.onclick=function(){ close('later'); };
+    handle.close=close; sheetNow=handle;
+    setTimeout(function(){ var f=(o.focus && sh.querySelector(o.focus)) || x; try{ f.focus({preventScroll:true}); }catch(e){} },40);
+    return handle;
   }
-  function renderFilter(){
+
+  /* ---------- filters: one button, the filters that are on as small chips, and a sheet to change them ---------- */
+  var CHECK='<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+  var FUNNEL='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12L9.5 9v4l-3-1.5V9z"/></svg>';
+  function filterButton(n,disabled,onClick){
+    var b=el('button','btn fbtn'); b.type='button'; b.disabled=!!disabled; b.setAttribute('aria-haspopup','dialog');
+    b.insertAdjacentHTML('afterbegin',FUNNEL); b.append(document.createTextNode('Filters'));
+    if(n){ b.append(el('span','badge',String(n))); b.setAttribute('aria-label','Filters, '+n+' on'); }
+    b.onclick=onClick; return b;
+  }
+  function activeChip(label,onRemove,disabled){
+    var c=el('button','afchip'); c.type='button'; c.disabled=!!disabled;
+    c.append(document.createTextNode(label+' '),el('span','x','×'));
+    c.setAttribute('aria-label','Remove filter '+label); c.onclick=onRemove; return c;
+  }
+  // the filters that are on: for the to-watch list (and the wheel) or for the Watched tab, as [{label, remove}]
+  function activeFilters(kind){
+    var out=[], genres=kind==='todo'?selected:wf.genres, srcs=kind==='todo'?srcSel:wf.src;
+    genres.slice().forEach(function(k){ out.push({label:gname(k),remove:function(){ var i=genres.indexOf(k); if(i>=0) genres.splice(i,1); }}); });
+    srcs.slice().forEach(function(k){ out.push({label:'Added by '+srcName(k),remove:function(){ var i=srcs.indexOf(k); if(i>=0) srcs.splice(i,1); }}); });
+    if(kind==='done' && wf.mode!=='all') out.push({label:wf.mode==='fav'?'Favorites':'Unrated',remove:function(){ wf.mode='all'; }});
+    return out;
+  }
+  function filtersChanged(kind){ if(kind==='todo') filterChanged(); else render(); }
+
+  function renderFilter(){          // the wheel's filter row
     var host=$('filter'), t=todo(), counts=genreCounts(t), srcs=srcCounts(t);
     selected=selected.filter(function(k){ return counts.some(function(c){return c.key===k}); });
     srcSel=srcSel.filter(function(k){ return srcs.some(function(c){return c.key===k}); });
     host.innerHTML='';
     var showSrc=srcs.some(function(c){return c.key!=='_'});        // only once a name is on a movie
     if(!counts.length && !showSrc){
-      var h=el('div','fine','Click Edit on a movie to give it genres, then you can spin one genre at a time.'); h.style.textAlign='center';
+      var h=el('div','fine','Open Edit on a movie to give it genres, then you can spin one genre at a time.'); h.style.textAlign='center';
       host.append(h); return;
     }
-    if(counts.length) chipGroup(host,'Spin from','Genres on the wheel','All genres',counts,selected,filterChanged,spinning);
-    if(showSrc) chipGroup(host,'Added by','Who added the movies on the wheel','Anyone',srcs,srcSel,filterChanged,spinning);
+    var act=activeFilters('todo'), row=el('div','frow');
+    row.append(filterButton(act.length,spinning,function(){ openFilterSheet('todo'); }));
+    act.forEach(function(a){ row.append(activeChip(a.label,function(){ a.remove(); filterChanged(); },spinning)); });
+    host.append(row);
     var p=pool().length, n=t.length;
-    host.append(el('div','status', (selected.length||srcSel.length) ? p+' of '+n+' movies on the wheel' : n+' movies on the wheel'));
+    host.append(el('div','status', act.length ? p+' of '+n+' movies on the wheel' : n+' movies on the wheel'));
+  }
+
+  function renderListFilter(){      // the list's filter row: the same button, for the tab that is open
+    var host=$('lfilter'); host.innerHTML='';
+    var kind=tab==='todo'?'todo':'done', base=kind==='todo'?todo():movies.filter(function(m){return m.watched});
+    var counts=genreCounts(base), srcs=srcCounts(base);
+    if(kind==='done'){
+      wf.genres=wf.genres.filter(function(k){return counts.some(function(c){return c.key===k})});
+      wf.src=wf.src.filter(function(k){return srcs.some(function(c){return c.key===k})});
+    }
+    var hasSrc=srcs.some(function(c){return c.key!=='_'});
+    host.hidden = !(counts.length || hasSrc || (kind==='done' && base.length));
+    if(host.hidden) return;
+    var act=activeFilters(kind), row=el('div','frow');
+    row.append(filterButton(act.length,false,function(){ openFilterSheet(kind); }));
+    act.forEach(function(a){ row.append(activeChip(a.label,function(){ a.remove(); filtersChanged(kind); },false)); });
+    host.append(row);
+    if(act.length) host.append(el('div','status','Showing '+(kind==='todo'?pool().length:watchedList().length)+' of '+base.length));
+  }
+
+  function openFilterSheet(kind){
+    var sh=openSheet({title:kind==='done'?'Filter and sort':'Filters', restore:(view==='wheel' && kind==='todo') ? '#filter .fbtn' : '#lfilter .fbtn'});
+    var showBtn=el('button','btn solid'); showBtn.type='button'; showBtn.onclick=function(){ sh.close('done'); };
+    var clear=btn('Clear all','btn quiet',function(){
+      var s=sets(); s.genres.length=0; s.src.length=0; if(kind==='done') wf.mode='all';
+      build(); filtersChanged(kind);
+    });
+    sh.foot.append(clear,showBtn);
+    function sets(){ return kind==='todo' ? {genres:selected,src:srcSel,base:todo()} : {genres:wf.genres,src:wf.src,base:movies.filter(function(m){return m.watched})}; }
+    function chipSection(title,aria,items,sel){
+      var sec=el('div','sec'); sec.append(el('h3',null,title));
+      var row=el('div','gchips'); row.setAttribute('role','group'); row.setAttribute('aria-label',aria);
+      items.forEach(function(c){
+        var b=el('button','gchip'); b.type='button'; b.setAttribute('aria-pressed',String(sel.indexOf(c.key)>=0));
+        b.append(document.createTextNode(c.name+' '),el('span','n',c.n));
+        b.onclick=function(){ var i=sel.indexOf(c.key); if(i>=0) sel.splice(i,1); else sel.push(c.key); build(); filtersChanged(kind); };
+        row.append(b);
+      });
+      sec.append(row); return sec;
+    }
+    function segSection(title,opts,get,set){
+      var sec=el('div','sec'); sec.append(el('h3',null,title));
+      var seg=el('div','seg'); seg.setAttribute('role','group'); seg.setAttribute('aria-label',title);
+      opts.forEach(function(o){ var b=el('button',null,o[1]); b.type='button'; b.setAttribute('aria-pressed',String(get()===o[0])); b.onclick=function(){ set(o[0]); build(); filtersChanged(kind); }; seg.append(b); });
+      sec.append(seg); return sec;
+    }
+    function build(){
+      var s=sets(); sh.body.innerHTML='';
+      if(kind==='done'){
+        sh.body.append(segSection('Show',[['all','All'],['fav','Favorites'],['unrated','Unrated']],function(){return wf.mode},function(v){wf.mode=v}));
+        sh.body.append(segSection('Sort by',[['recent','Most recent'],['rating','Top rated']],function(){return wf.sort},function(v){wf.sort=v}));
+      }
+      var gc=genreCounts(s.base), sc=srcCounts(s.base);
+      if(gc.length) sh.body.append(chipSection('Genre','Genres',gc,s.genres));
+      if(sc.some(function(c){return c.key!=='_'})) sh.body.append(chipSection('Added by','Who added the movies',sc,s.src));
+      var n=kind==='todo'?pool().length:watchedList().length;
+      showBtn.textContent = kind==='todo' ? 'Spin from '+n+(n===1?' movie':' movies') : 'Show '+n+(n===1?' movie':' movies');
+    }
+    build();
   }
   function filterChanged(){ if(spinning) return; winnerId=null; $('result').innerHTML=''; renderFilter(); syncControls(); draw(); render(); }
 
@@ -585,7 +873,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     var meta=[fmtLen(m.runtime), m.year||'', gens(m).map(gname).join(', ')].filter(Boolean).join(' · ');
     var row=el('div','row');
     var b1=el('button','btn solid','Mark as watched');
-    b1.onclick=function(){ winnerId=null; box.innerHTML=''; store.patch(m.id,{watched:true,watchedAt:Date.now()}); };
+    b1.onclick=function(){ winnerId=null; box.innerHTML=''; markWatched(m.id); };
     var b2=el('button','btn','Spin again'); b2.onclick=function(){ spin(); };
     var b3=el('button','btn quiet','Keep on the list'); b3.onclick=function(){ winnerId=null; box.innerHTML=''; draw(); };
     row.append(b1,b2,b3); r.append(e,h); if(meta) r.append(el('div','status',meta)); r.append(row); box.append(r);
@@ -595,8 +883,8 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   var wf={mode:'all',sort:'recent',genres:[],src:[]};     // filters on the Watched tab
   function showErr(msg){ var e=$('err'); e.hidden=!msg; e.textContent=msg||''; }
   function btn(label,cls,fn){ var b=el('button',cls,label); b.type='button'; b.onclick=fn; return b; }
-  function starRow(val,onSet,label){
-    var wrap=el('span','stars'); wrap.setAttribute('role','group'); wrap.setAttribute('aria-label',label||'Rating');
+  function starRow(val,onSet,label,big){
+    var wrap=el('span','stars'+(big?' big':'')); wrap.setAttribute('role','group'); wrap.setAttribute('aria-label',label||'Rating');
     function paint(){ [].forEach.call(wrap.children,function(b,i){ b.classList.toggle('on',i<val); b.setAttribute('aria-pressed',String(i+1===val)); }); }
     for(var i=1;i<=5;i++){ (function(n){
       var b=el('button','star','★'); b.type='button'; b.setAttribute('aria-label',n+(n===1?' star':' stars'));
@@ -615,118 +903,210 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     else l.sort(function(a,b){return (b.watchedAt||0)-(a.watchedAt||0)});
     return l;
   }
-  function renderWFilter(){
-    var host=$('wfilter'); host.hidden = tab!=='done'; host.innerHTML='';
-    if(tab!=='done') return;
-    var watched=movies.filter(function(m){return m.watched});
-    var row=el('div','rowf');
-    var seg=el('div','seg'); seg.setAttribute('role','group'); seg.setAttribute('aria-label','Filter watched movies');
-    [['all','All'],['fav','Favorites'],['unrated','Unrated']].forEach(function(o){
-      var b=el('button',null,o[1]); b.type='button'; b.setAttribute('aria-pressed',String(wf.mode===o[0]));
-      b.onclick=function(){ wf.mode=o[0]; render(); }; seg.append(b);
-    });
-    var seg2=el('div','seg'); seg2.setAttribute('role','group'); seg2.setAttribute('aria-label','Sort watched movies');
-    [['recent','Recent'],['rating','Top rated']].forEach(function(o){
-      var b=el('button',null,o[1]); b.type='button'; b.setAttribute('aria-pressed',String(wf.sort===o[0]));
-      b.onclick=function(){ wf.sort=o[0]; render(); }; seg2.append(b);
-    });
-    row.append(seg,seg2); host.append(row);
-    var counts=genreCounts(watched);
-    wf.genres=wf.genres.filter(function(k){return counts.some(function(c){return c.key===k})});
-    if(counts.length){
-      var chips=el('div','gchips');
-      counts.forEach(function(c){
-        var b=el('button','gchip'); b.type='button'; b.setAttribute('aria-pressed',String(wf.genres.indexOf(c.key)>=0));
-        b.append(document.createTextNode(c.name+' '),el('span','n',c.n));
-        b.onclick=function(){ var i=wf.genres.indexOf(c.key); if(i>=0) wf.genres.splice(i,1); else wf.genres.push(c.key); render(); };
-        chips.append(b);
-      });
-      host.append(chips);
-    }
-    var srcs=srcCounts(watched);
-    wf.src=wf.src.filter(function(k){return srcs.some(function(c){return c.key===k})});
-    if(srcs.some(function(c){return c.key!=='_'})) chipGroup(host,'Added by','Who added the watched movies','Anyone',srcs,wf.src,render,false);
+  /* ---------- "What did you think?": a movie marked watched on this device with no rating or review is asked about the next time the app opens ---------- */
+  var PEND_KEY='movie-wheel-review-prompts';
+  function pendingLoad(){ try{ var a=JSON.parse(localStorage.getItem(PEND_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function pendingSave(a){ try{ localStorage.setItem(PEND_KEY,JSON.stringify(a.slice(-30))); }catch(e){} }
+  function pendingAdd(id){ var a=pendingLoad().filter(function(p){return p.id!==id}); a.push({id:id,asks:0}); pendingSave(a); }
+  function pendingDrop(id){ pendingSave(pendingLoad().filter(function(p){return p.id!==id})); }
+  function pendingSnooze(id){      // "not now": ask again next time, up to three times in all
+    var a=pendingLoad(), p=a.find(function(x){return x.id===id}); if(!p) return;
+    p.asks++; pendingSave(p.asks>=3 ? a.filter(function(x){return x.id!==id}) : a);
   }
+  function markWatched(id){
+    store.patch(id,{watched:true,watchedAt:Date.now()});
+    var m=movies.find(function(x){return x.id===id});
+    if(m && !m.rating && !m.review) pendingAdd(id);
+  }
+  var prompted=false;
+  function maybePrompt(){           // once each time the app opens
+    if(prompted || sheetNow) return; prompted=true;
+    var list=pendingLoad();
+    var keep=list.filter(function(p){ var m=movies.find(function(x){return x.id===p.id}); return m && m.watched && !m.rating && !m.review; });
+    if(keep.length!==list.length) pendingSave(keep);
+    if(!keep.length) return;
+    var m=movies.find(function(x){return x.id===keep[keep.length-1].id});
+    if(m) reviewSheet(m,true);
+  }
+  function reviewSheet(m,ask){
+    var rating=m.rating||0;
+    var sh=openSheet({title:ask?'What did you think?':'Your review', focus:'.stars .star:nth-child(5)',
+      onClose:function(reason){ if(ask && reason!=='saved' && reason!=='skip') pendingSnooze(m.id); }});
+    var b=sh.body;
+    b.append(el('div','mtitle',m.title));
+    var meta=[m.year||'', fmtLen(m.runtime)].filter(Boolean).join(' · '); if(meta) b.append(el('div','mmeta',meta));
+    var s1=el('div','sec'); s1.append(el('h3',null,'Your rating'));
+    s1.append(starRow(rating,function(n){ rating=n; update(); },'Rating',true)); b.append(s1);
+    var s2=el('div','sec'); s2.append(el('h3',null,'Your review (optional)'));
+    var ta=el('textarea','field'); ta.maxLength=280; ta.placeholder='What stuck with you?'; ta.value=m.review||''; ta.setAttribute('aria-label','Review');
+    var cnt=el('div','count'); s2.append(ta,cnt); b.append(s2);
+    if(ask){ var skip=el('button','linkbtn','Don’t ask about this one'); skip.type='button'; skip.onclick=function(){ pendingDrop(m.id); sh.close('skip'); }; b.append(skip); }
+    var later=btn(ask?'Not now':'Cancel','btn quiet',function(){ sh.close('later'); });
+    var save=btn('Save','btn solid',function(){ store.patch(m.id,{rating:rating,review:ta.value.trim().slice(0,280)}); pendingDrop(m.id); sh.close('saved'); });
+    sh.foot.append(later,save);
+    function update(){ cnt.textContent=ta.value.length+' / 280'; save.disabled=!(rating||ta.value.trim()); }
+    ta.oninput=update; update();
+  }
+
+  /* ---------- the list ---------- */
   function render(){
     var todoList=todo(), doneAll=movies.filter(function(m){return m.watched});
     $('nTodo').textContent=todoList.length; $('nDone').textContent=doneAll.length;
     $('tabTodo').setAttribute('aria-pressed',tab==='todo'); $('tabDone').setAttribute('aria-pressed',tab==='done');
-    renderWFilter();
-    var items = tab==='todo'? todoList : watchedList();
+    renderListFilter();
+    var items = tab==='todo'? pool() : watchedList();
     var host=$('listHost'); host.innerHTML='';
     if(!items.length){
-      var msg = tab==='todo' ? 'Nothing left to watch. Add a movie above.'
-        : (doneAll.length ? 'No watched movies match these filters.' : 'Nothing watched yet. Mark a film as watched and it moves here.');
+      var filtered = tab==='todo' ? (selected.length||srcSel.length) : (wf.mode!=='all'||wf.genres.length||wf.src.length);
+      var msg = filtered ? 'Nothing matches these filters.'
+        : tab==='todo' ? 'Nothing left to watch. Add a movie above.'
+        : 'Nothing watched yet. Mark a film as watched and it moves here.';
       host.append(el('div','none',msg)); return;
     }
     var ul=el('ul');
-    items.forEach(function(m){
-      var li=el('li'); if(m.watched) li.className='done';
-      if(editingId===m.id){ editRow(m,li); ul.append(li); return; }
-      var tw=el('div','tw');
-      tw.append(el('span','t',m.title));
-      var gl=el('div','gl');
-      if(m.watched) gl.append(starRow(m.rating,function(n){ store.patch(m.id,{rating:n}); },'Rating for '+m.title));
-      var lenTxt=[fmtLen(m.runtime), m.year||''].filter(Boolean).join(' · ');
-      if(lenTxt) gl.append(el('span','chip len',lenTxt));
-      if(m.addedBy) gl.append(el('span','chip who'+(m.addedBy==='r7'?' r7':''),srcName(m.addedBy)));
-      gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){
-        gl.append(el('span','chip'+(selected.indexOf(gkey(g))>=0?' on':''),gname(g)));
-      });
-      if(gl.children.length) tw.append(gl);
-      if(m.review) tw.append(el('div','review',m.review));
-      li.append(tw);
-      if(m.watched) li.append(btn('Move back to list','icon-btn act',function(){store.patch(m.id,{watched:false});}));
-      else li.append(btn('✓ Mark watched','icon-btn act',function(){store.patch(m.id,{watched:true,watchedAt:Date.now()});}));
-      li.append(btn('Edit','icon-btn',function(){editingId=m.id; editGenres=gens(m).map(gname); render();}));
-      var x=btn('×','icon-btn x',function(){store.remove(m.id);}); x.setAttribute('aria-label','Remove '+m.title); li.append(x);
-      ul.append(li);
-    });
+    items.forEach(function(m){ ul.append(movieRow(m)); });
     host.append(ul);
   }
-  function editRow(m,li){
+  function movieRow(m){
+    var li=el('li','row'+(m.watched?' done':''));
+    li.append(el('span','t',m.title));
+    var gl=el('div','gl');
+    if(m.watched) gl.append(starRow(m.rating,function(n){ store.patch(m.id,{rating:n}); if(n) pendingDrop(m.id); },'Rating for '+m.title));
+    var lenTxt=[fmtLen(m.runtime), m.year||''].filter(Boolean).join(' · ');
+    if(lenTxt) gl.append(el('span','chip len',lenTxt));
+    if(m.addedBy) gl.append(el('span','chip who'+(m.addedBy==='r7'?' r7':''),srcName(m.addedBy)));
+    gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){
+      gl.append(el('span','chip'+(selected.indexOf(gkey(g))>=0?' on':''),gname(g)));
+    });
+    if(gl.children.length) li.append(gl);
+    if(m.review) li.append(el('div','review',m.review));
+    var acts=el('div','acts');
+    if(m.watched) acts.append(btn(m.review?'Edit review':'Write a review','btn main',function(){ reviewSheet(m,false); }));
+    else { var mb=btn('Mark watched','btn solid main',function(){ markWatched(m.id); }); mb.insertAdjacentHTML('afterbegin',CHECK); acts.append(mb); }
+    acts.append(btn('Edit','btn',function(){ editMovie(m.id); }));
+    li.append(acts);
+    return li;
+  }
+
+  // Edit a movie in a sheet: title and length, rating and review (watched), genres, who added it, move it between the lists, or remove it.
+  function editMovie(id){
+    var m=movies.find(function(x){return x.id===id}); if(!m) return;
     var d={year:m.year||0,rating:m.rating||0};
-    var ed=el('div','edit'); li.className='editing';
+    editGenres=gens(m).map(gname);
+    var sh=openSheet({title:'Edit movie',focus:'.sheet-foot .btn.solid'});
+    var b=sh.body;
     var inp=el('input','field'); inp.value=m.title; inp.maxLength=120; inp.setAttribute('aria-label','Title');
     var sw=el('div','sw'); sw.append(inp);
-    var len=el('input','field num'); len.type='number'; len.min='0'; len.max='999'; len.placeholder='Minutes'; len.setAttribute('aria-label','Length in minutes'); if(m.runtime) len.value=m.runtime;
+    var len=el('input','field num'); len.type='number'; len.inputMode='numeric'; len.min='0'; len.max='999'; len.placeholder='Minutes'; len.setAttribute('aria-label','Length in minutes'); if(m.runtime) len.value=m.runtime;
+    var s1=el('div','sec'); s1.append(el('h3',null,'Title and length')); var r2=el('div','row2'); r2.append(sw,len); s1.append(r2); b.append(s1);
     var pickerHost=el('div');
     var drawPicker=function(){ pickerHost.innerHTML=''; pickerHost.append(genrePicker(editGenres)); };
-    var rv=null, saveBy=function(){};
-    var save=function(){
-      var v=inp.value.trim(); editingId=null;
-      if(!v){ render(); return; }
-      if(v.toLowerCase()!==m.title.toLowerCase() && movies.some(function(o){return o.id!==m.id && o.title.toLowerCase()===v.toLowerCase()})) v=m.title;
-      var patch={title:v,genres:editGenres.slice(),runtime:Math.max(0,Math.round(+len.value)||0),year:d.year};
-      if(m.watched){ patch.rating=d.rating; patch.review=rv.value.trim().slice(0,280); }
-      saveBy(patch);
-      store.patch(m.id,patch);
-    };
-    var cancel=function(){editingId=null;render();};
-    inp.onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); save(); } if(e.key==='Escape') cancel(); };
-    var top=el('div','editrow'); top.append(sw,len,btn('Save','icon-btn act',save),btn('Cancel','icon-btn',cancel));
-    ed.append(top);
     attachSuggest(inp,function(x){
       len.value=x.runtime||''; d.year=x.year||0;
       if(!editGenres.length && x.genres.length){ editGenres.push.apply(editGenres,x.genres); drawPicker(); }
     });
+    var rv=null;
     if(m.watched){
-      ed.append(el('span','eyebrow','Your rating'));
-      ed.append(starRow(d.rating,function(n){ d.rating=n; },'Rating'));
-      rv=el('textarea','field'); rv.maxLength=280; rv.placeholder='Short review (optional)'; rv.value=m.review||''; rv.setAttribute('aria-label','Review');
-      ed.append(rv);
+      var s2=el('div','sec'); s2.append(el('h3',null,'Your rating'));
+      s2.append(starRow(d.rating,function(n){ d.rating=n; },'Rating',true)); b.append(s2);
+      var s3=el('div','sec'); s3.append(el('h3',null,'Your review'));
+      rv=el('textarea','field'); rv.maxLength=280; rv.placeholder='Short review (optional)'; rv.value=m.review||''; rv.setAttribute('aria-label','Review'); s3.append(rv); b.append(s3);
     }
-    ed.append(el('span','eyebrow','Genres')); drawPicker(); ed.append(pickerHost);
+    var s4=el('div','sec'); s4.append(el('h3',null,'Genres')); drawPicker(); s4.append(pickerHost); b.append(s4);
     var by=null;
     if(people.length){
-      ed.append(el('span','eyebrow','Added by'));
+      var s5=el('div','sec'); s5.append(el('h3',null,'Added by'));
       by=el('select','field'); by.setAttribute('aria-label','Added by');
       [{key:'',name:'Not sure'}].concat(people).forEach(function(p){ var o=el('option',null,p.name); o.value=p.key; by.append(o); });
-      by.value=m.addedBy||''; ed.append(by);
+      by.value=m.addedBy||''; s5.append(by); b.append(s5);
     }
-    saveBy=function(patch){ if(by && by.value && by.value!==(m.addedBy||'')) patch.addedBy=by.value; };
-    li.append(ed);
-    setTimeout(function(){inp.focus();inp.select();},0);
+    var s6=el('div','sec'); s6.append(el('h3',null,'This movie'));
+    s6.append(m.watched
+      ? btn('Move back to my to-watch list','btn',function(){ store.patch(m.id,{watched:false}); sh.close('moved'); })
+      : btn('Mark as watched','btn',function(){ markWatched(m.id); sh.close('moved'); }));
+    var rm=el('button','danger','Remove from my list'); rm.type='button'; var rmTimer=null;
+    rm.onclick=function(){
+      if(!rm.classList.contains('sure')){ rm.classList.add('sure'); rm.textContent='Tap again to remove it'; clearTimeout(rmTimer); rmTimer=setTimeout(function(){ rm.classList.remove('sure'); rm.textContent='Remove from my list'; },3500); return; }
+      store.remove(m.id); sh.close('removed');
+    };
+    s6.append(rm); b.append(s6);
+    var save=btn('Save','btn solid',function(){
+      var v=inp.value.trim(); if(!v){ sh.close('later'); return; }
+      if(v.toLowerCase()!==m.title.toLowerCase() && movies.some(function(o){return o.id!==m.id && o.title.toLowerCase()===v.toLowerCase()})) v=m.title;
+      var patch={title:v,genres:editGenres.slice(),runtime:Math.max(0,Math.round(+len.value)||0),year:d.year};
+      if(m.watched){ patch.rating=d.rating; patch.review=rv.value.trim().slice(0,280); if(patch.rating||patch.review) pendingDrop(m.id); }
+      if(by && by.value && by.value!==(m.addedBy||'')) patch.addedBy=by.value;
+      store.patch(m.id,patch); sh.close('saved');
+    });
+    sh.foot.append(btn('Cancel','btn quiet',function(){ sh.close('later'); }),save);
+  }
+
+  /* ---------- reviews: everything you have rated or written, newest first ---------- */
+  var rvs={q:'',mode:'all',sort:'recent',all:false}, rvUI=null;
+  function staticStars(n){ var s=el('span','sr'); s.setAttribute('role','img'); s.setAttribute('aria-label',n+' out of 5 stars'); for(var i=1;i<=5;i++){ var c=el('span',i<=n?'on':null,'★'); s.append(c); } return s; }
+  function dateText(t){ return t ? new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : ''; }
+  function renderReviews(){
+    var host=$('viewReviews');
+    if(!rvUI){
+      host.innerHTML=''; var root=el('div','rv'); rvUI={};
+      rvUI.summary=el('p','lead'); rvUI.waiting=el('div');
+      var tools=el('div','tools');
+      var q=el('input','field'); q.type='search'; q.placeholder='Search your reviews'; q.setAttribute('aria-label','Search your reviews'); q.autocomplete='off';
+      q.oninput=function(){ rvs.q=q.value; fillReviews(); };
+      var rowA=el('div','rtop');
+      function seg(label,opts,key){
+        var s=el('div','seg'); s.setAttribute('role','group'); s.setAttribute('aria-label',label);
+        opts.forEach(function(o){ var b=el('button',null,o[1]); b.type='button'; b.dataset.v=o[0]; b.onclick=function(){ rvs[key]=o[0]; fillReviews(); }; s.append(b); });
+        return s;
+      }
+      rvUI.segMode=seg('Which movies',[['all','All'],['written','Written'],['fav','Favorites']],'mode');
+      rvUI.segSort=seg('Sort by',[['recent','Recent'],['rating','Top rated']],'sort');
+      rowA.append(rvUI.segMode,rvUI.segSort); tools.append(q,rowA);
+      rvUI.list=el('div'); rvUI.list.style.display='flex'; rvUI.list.style.flexDirection='column'; rvUI.list.style.gap='var(--s-3)';
+      root.append(rvUI.summary,rvUI.waiting,tools,rvUI.list); host.append(root);
+    }
+    fillReviews();
+  }
+  function fillReviews(){
+    var watched=movies.filter(function(m){return m.watched});
+    var rated=watched.filter(function(m){return m.rating||m.review});
+    var texts=watched.filter(function(m){return m.review}).length, nRated=watched.filter(function(m){return m.rating}).length;
+    rvUI.summary.textContent = rated.length ? texts+(texts===1?' review':' reviews')+' and '+nRated+(nRated===1?' rating':' ratings')+', across '+watched.length+' watched movies.' : 'Rate or review a watched movie and it shows up here.';
+    [rvUI.segMode,rvUI.segSort].forEach(function(s,i){ [].forEach.call(s.children,function(b){ b.setAttribute('aria-pressed',String(b.dataset.v===(i?rvs.sort:rvs.mode))); }); });
+    // waiting for your take
+    var wt=watched.filter(function(m){return !m.rating && !m.review}).sort(function(a,b){return (b.watchedAt||0)-(a.watchedAt||0)});
+    rvUI.waiting.innerHTML='';
+    if(wt.length){
+      var box=el('div','waiting'); box.append(el('h2',null,'Waiting for your take'));
+      box.append(el('div','fine',wt.length+(wt.length===1?' watched movie has':' watched movies have')+' no rating or review yet.'));
+      (rvs.all?wt:wt.slice(0,3)).forEach(function(m){
+        var r=el('div','wrow'); r.append(el('span','t',m.title)); r.append(btn('Rate it','btn',function(){ reviewSheet(m,false); })); box.append(r);
+      });
+      if(wt.length>3) box.append(btn(rvs.all?'Show fewer':'Show all '+wt.length,'btn quiet',function(){ rvs.all=!rvs.all; fillReviews(); }));
+      rvUI.waiting.append(box);
+    }
+    // the reviews
+    var q=rvs.q.trim().toLowerCase();
+    var items=rated.filter(function(m){
+      if(rvs.mode==='written' && !m.review) return false;
+      if(rvs.mode==='fav' && !(m.rating>=4)) return false;
+      if(q && (m.title+' '+m.review).toLowerCase().indexOf(q)<0) return false;
+      return true;
+    });
+    items.sort(rvs.sort==='rating' ? function(a,b){return (b.rating-a.rating)||((b.watchedAt||0)-(a.watchedAt||0))} : function(a,b){return (b.watchedAt||b.updatedAt||0)-(a.watchedAt||a.updatedAt||0)});
+    rvUI.list.innerHTML='';
+    if(!items.length){ rvUI.list.append(el('div','none',rated.length?'Nothing matches.':'No reviews yet.')); return; }
+    items.forEach(function(m){
+      var c=el('article','rcard'); c.append(el('div','t',m.title));
+      var meta=el('div','rmeta'); if(m.rating) meta.append(staticStars(m.rating));
+      var when=dateText(m.watchedAt); if(when) meta.append(el('span',null,'Watched '+when));
+      if(m.runtime) meta.append(el('span',null,fmtLen(m.runtime)));
+      c.append(meta);
+      if(m.review) c.append(el('div','review',m.review));
+      var gl=el('div','gl'); gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){ gl.append(el('span','chip',gname(g))); }); if(gl.children.length) c.append(gl);
+      var acts=el('div','acts'); acts.append(btn(m.review?'Edit review':'Add a review','btn',function(){ reviewSheet(m,false); }),btn('Edit movie','btn quiet',function(){ editMovie(m.id); })); c.append(acts);
+      rvUI.list.append(c);
+    });
   }
 
   function syncControls(){
@@ -742,7 +1122,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     if(spinning){ dirty=true; return; }
     if(winnerId && !pool().some(function(m){return m.id===winnerId})) { winnerId=null; $('result').innerHTML=''; }
     renderFilter(); render(); syncControls(); draw();
-    if(view==='dash') renderDash();
+    if(view==='dash') renderDash(); else if(view==='reviews') renderReviews();
   }
 
   /* ---------- dashboard ---------- */
@@ -865,14 +1245,20 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   }
 
   /* ---------- views ---------- */
+  var TITLES={wheel:'Spin for <em>tonight\'s film.</em>',list:'Your <em>movies.</em>',dash:'Your watching, <em>in numbers.</em>',reviews:'What you <em>thought.</em>',chat:'Ask about <em>your movies.</em>'};
   function route(){
-    view = location.hash==='#dashboard' ? 'dash' : (location.hash==='#chat' && window.MW_CHAT ? 'chat' : 'wheel');
-    $('viewWheel').hidden = view!=='wheel'; $('viewDash').hidden = view!=='dash'; $('viewChat').hidden = view!=='chat';
-    [['wheel','navWheel'],['dash','navDash'],['chat','navChat']].forEach(function(p){
-      if(view===p[0]) $(p[1]).setAttribute('aria-current','page'); else $(p[1]).removeAttribute('aria-current');
-    });
-    $('h1').innerHTML = view==='dash' ? 'Your watching, <em>in numbers.</em>' : view==='chat' ? 'Ask about <em>your movies.</em>' : 'Spin for <em>tonight\'s film.</em>';
+    var h=location.hash;
+    view = h==='#dashboard' ? 'dash' : h==='#reviews' ? 'reviews' : (h==='#chat' && window.MW_CHAT) ? 'chat' : h==='#list' ? 'list' : 'wheel';
+    var phone=!!(window.matchMedia && matchMedia('(max-width: 820px)').matches);
+    document.body.dataset.view = view;
+    $('viewWheel').hidden = !(view==='wheel' || view==='list');
+    $('viewWheel').dataset.screen = view==='list' ? 'list' : 'wheel';
+    $('viewDash').hidden = view!=='dash'; $('viewReviews').hidden = view!=='reviews'; $('viewChat').hidden = view!=='chat';
+    var current = (view==='list' && !phone) ? 'wheel' : view;      // on a computer the list sits beside the wheel
+    [].forEach.call(document.querySelectorAll('[data-view]'),function(a){ if(a.dataset.view===current) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+    $('h1').innerHTML = TITLES[phone||view!=='list' ? view : 'wheel'];
     if(view==='dash') renderDash();
+    else if(view==='reviews') renderReviews();
     else if(view==='chat') window.MW_CHAT.render($('viewChat'),{
       movies:function(){return movies}, fmtLen:fmtLen, gname:gname, gens:gens,
       who:function(m){ return m.addedBy ? srcName(m.addedBy) : ''; },
@@ -880,6 +1266,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       removeMovies:function(ids){ ids.forEach(function(id){ store.remove(id); }); }
     });
     else draw();
+    if(!route.first) route.first=true; else window.scrollTo(0,0);
   }
 
   /* ---------- events ---------- */
@@ -921,9 +1308,10 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   };
   window.addEventListener('resize',draw);
   window.addEventListener('hashchange',route);
+  if(window.matchMedia){ var mq=matchMedia('(max-width: 820px)'); if(mq.addEventListener) mq.addEventListener('change',route); }
 
   /* ---------- boot ---------- */
-  if(window.MW_CHAT) $('navChat').hidden=false;   // the chat module exists only in the standalone copy
+  if(window.MW_CHAT) [].forEach.call(document.querySelectorAll('[data-view="chat"]'),function(a){ a.hidden=false; });   // the chat module exists only in the standalone copy
 
   /* ---------- standalone copy: starting list, export and import (the claude.ai page keeps its list in a shared database) ---------- */
   var SEEDED='movie-wheel-seeded';
@@ -1006,6 +1394,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
     });
   }
   loadLib();
+  seedDone.then(function(){ setTimeout(maybePrompt,1300); });     // "What did you think?" for a movie marked watched last time
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
   (async function(){
     try{
