@@ -227,6 +227,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
         <button class="btn quiet" type="button" id="importBtn">Import list</button>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
         <span class="fine" id="backupMsg" role="status"></span>
+        <span class="fine" id="syncMsg" role="status" hidden></span>
       </div>
     </section>
   </div>
@@ -236,6 +237,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
 </div>
 
 <script src="config.js"></script>
+<script src="sync.js"></script>
 <script src="chat.js"></script>
 <script>
 (function(){
@@ -259,10 +261,11 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   function uid(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
   var local = {
-    add:function(t,g,x){ movies.push(Object.assign({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now()},x||{})); lsSave(); refresh(); },
-    patch:function(id,p){ var m=movies.find(function(x){return x.id===id}); if(m){Object.assign(m,p); lsSave(); refresh();} },
-    remove:function(id){ movies=movies.filter(function(x){return x.id!==id}); lsSave(); refresh(); }
+    add:function(t,g,x){ movies.push(Object.assign({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now(),updatedAt:Date.now()},x||{})); lsSave(); touch(); refresh(); },
+    patch:function(id,p){ var m=movies.find(function(x){return x.id===id}); if(m){Object.assign(m,p,{updatedAt:Date.now()}); lsSave(); touch(); refresh();} },
+    remove:function(id){ movies=movies.filter(function(x){return x.id!==id}); if(window.MW_SYNC) MW_SYNC.removed(id); lsSave(); touch(); refresh(); }
   };
+  function touch(){ if(window.MW_SYNC) MW_SYNC.changed(); }     // tells the sync module (standalone copy only) that the list changed
   function dbStore(db){
     var col = db.collection('movies');
     col.onSnapshot(function(snap){
@@ -879,7 +882,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       genres:(Array.isArray(x.genres)?x.genres:[]).map(function(g){return gname(g)}).filter(Boolean).slice(0,12),
       runtime:Math.max(0,Math.round(+x.runtime)||0), year:Math.max(0,Math.round(+x.year)||0),
       rating:Math.min(5,Math.max(0,Math.round(+x.rating)||0)), review:String(x.review||'').slice(0,280),
-      addedAt:+x.addedAt||Date.now(), watchedAt:+x.watchedAt||0};
+      addedAt:+x.addedAt||Date.now(), watchedAt:+x.watchedAt||0, updatedAt:+x.updatedAt||0};
   }
   function cleanList(a){ return (Array.isArray(a)?a:[]).map(cleanMovie).filter(Boolean); }
   function backupMsg(t){ $('backupMsg').textContent=t; }
@@ -897,8 +900,10 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
       f.text().then(function(txt){
         var list=cleanList(JSON.parse(txt));
         if(!list.length){ backupMsg('That file has no movies in it. Nothing was changed.'); return; }
-        movies=list; lsSave(); try{localStorage.setItem(SEEDED,'1');}catch(e){}
-        editingId=null; refresh(); backupMsg('Imported '+list.length+' movies. They replaced the list on this device.');
+        var keep={}; list.forEach(function(m){ keep[m.id]=1; m.updatedAt=Date.now(); });
+        movies.forEach(function(m){ if(!keep[m.id] && window.MW_SYNC) MW_SYNC.removed(m.id); });
+        movies=list; lsSave(); touch(); try{localStorage.setItem(SEEDED,'1');}catch(e){}
+        editingId=null; refresh(); backupMsg('Imported '+list.length+' movies. They replaced the list on this device'+(window.MW_SYNC&&MW_SYNC.enabled()?' and on your other devices.':'.'));
       }).catch(function(){ backupMsg('That file could not be read. Nothing was changed.'); });
     };
   }
@@ -906,11 +911,23 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
   store = local; movies = lsLoad(); route(); refresh();
   // A page can ship a starting list (window.MW_SEED = 'movies-seed.json'). It loads once, on a device with no list, and never again.
   var seeded=false; try{ seeded=localStorage.getItem(SEEDED)==='1'; }catch(e){}
+  var seedDone = Promise.resolve();
   if(!movies.length && window.MW_SEED && !seeded){
-    fetch(window.MW_SEED).then(function(r){ return r.ok ? r.json() : null; }).then(function(a){
+    seedDone = fetch(window.MW_SEED).then(function(r){ return r.ok ? r.json() : null; }).then(function(a){
       var list=cleanList(a);
-      if(list.length && !movies.length && store===local){ movies=list; lsSave(); try{localStorage.setItem(SEEDED,'1');}catch(e){} refresh(); }
+      if(list.length && !movies.length && store===local){ movies=list; lsSave(); touch(); try{localStorage.setItem(SEEDED,'1');}catch(e){} refresh(); }
     }).catch(function(){});
+  }
+  // Keep the list on the Worker so every device shows the same one (standalone copy only; needs the Worker address under Chat settings).
+  if(window.MW_SYNC && !window.claude){
+    seedDone.then(function(){
+      $('syncMsg').hidden=false;
+      MW_SYNC.start({
+        get:function(){ return movies; },
+        set:function(list){ movies=cleanList(list); lsSave(); editingId=null; refresh(); },
+        status:function(t){ $('syncMsg').textContent=t; }
+      });
+    });
   }
   loadLib();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw);

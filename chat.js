@@ -102,10 +102,10 @@
     var set = el('div', 'set');
     var l1 = el('label', null, 'Worker address'); l1.htmlFor = 'chUrl';
     var u = el('input', 'field'); u.id = 'chUrl'; u.type = 'url'; u.placeholder = 'https://r7-movie-wheel-chat.your-name.workers.dev'; u.value = workerUrl();
-    u.oninput = function () { lsSet(URL_KEY, u.value.trim()); };
+    u.oninput = function () { lsSet(URL_KEY, u.value.trim()); if (window.MW_SYNC) window.MW_SYNC.sync(); };
     var l2 = el('label', null, 'Passphrase'); l2.htmlFor = 'chPass';
     var p = el('input', 'field'); p.id = 'chPass'; p.type = 'password'; p.autocomplete = 'off'; p.placeholder = 'The APP_PASSPHRASE you set on the Worker'; p.value = lsGet(PASS_KEY);
-    p.oninput = function () { lsSet(PASS_KEY, p.value); };
+    p.oninput = function () { lsSet(PASS_KEY, p.value); if (window.MW_SYNC) window.MW_SYNC.sync(); };
     set.append(l1, u, l2, p, el('div', 'fine', 'Saved in this browser only. Your OpenAI key is never in this page; it lives on the Worker.'));
     det.append(set);
     if (!workerUrl() || !lsGet(PASS_KEY)) det.open = true;
