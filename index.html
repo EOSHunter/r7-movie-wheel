@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 [hidden]{display:none!important}
-/* Layout: wheel as the dial on the left, the list as a quiet panel on the right; stacks on phones. Tokens from R7 Orbit (obsidian, ivory, brass). */
+/* Layout: two views on one page. Wheel: the dial on the left, the list as a quiet panel on the right. Dashboard: tiles, then cards of bars. Tokens from R7 Orbit (obsidian, ivory, brass). */
 :root{
   --bg:#09090a; --surface-1:#0f0f11; --surface-2:#151518; --surface-3:#1b1b1f;
   --line:#ece4d214; --line-strong:#ece4d229; --line-brass:#c9a96a6b;
@@ -29,6 +29,12 @@ body{background:var(--bg);color:var(--text);font:400 13px/1.5 var(--ui);letter-s
 body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(#ece4d20b 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:radial-gradient(ellipse at 35% 40%,#000 0%,transparent 70%);mask-image:radial-gradient(ellipse at 35% 40%,#000 0%,transparent 70%)}
 .wrap{position:relative;max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s-5)}
 header{display:flex;flex-direction:column;gap:var(--s-2)}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap}
+.nav{display:flex;gap:var(--s-4)}
+.nav a{font-size:12px;letter-spacing:.02em;color:var(--text-2);text-decoration:none;padding-block:4px;border-bottom:1px solid transparent}
+.nav a:hover{color:var(--brass-bright)}
+.nav a[aria-current=page]{color:var(--brass-bright);border-bottom-color:var(--brass)}
+.nav a:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3)}
 .wordmark{font-size:11px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--text-2)}
 h1{font:400 44px/1.05 var(--display);margin:0;text-wrap:balance}
@@ -40,9 +46,8 @@ h1 em{font-style:italic;color:var(--brass-bright)}
 .stage{display:flex;flex-direction:column;align-items:center;gap:var(--s-4)}
 .dial{position:relative;width:min(100%,460px);aspect-ratio:1}
 canvas{width:100%;height:100%;display:block}
-.pointer{position:absolute;left:50%;top:-6px;width:20px;height:26px;transform:translateX(-50%);z-index:2}
+.pointer{position:absolute;left:50%;top:-6px;width:20px;height:26px;transform:translateX(-50%);z-index:2;transform-origin:50% 20%}
 .pointer svg{display:block;width:100%;height:100%}
-.pointer{transform-origin:50% 20%}
 .pointer.flick{animation:flick 90ms var(--ease)}
 @keyframes flick{0%{transform:translateX(-50%) rotate(-14deg)}100%{transform:translateX(-50%) rotate(0)}}
 .filter{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:var(--s-2);text-align:center}
@@ -54,18 +59,6 @@ canvas{width:100%;height:100%;display:block}
 .gchip:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .gchip .n{font:400 10px var(--mono);color:var(--text-3)}
 .gchip[aria-pressed=true] .n{color:var(--brass-dim)}
-li .tw{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-block:2px}
-li .gl{display:flex;flex-wrap:wrap;gap:4px}
-.chip{font-size:10px;line-height:1;padding:3px 8px;border:1px solid var(--line);border-radius:var(--r-pill);color:var(--text-2)}
-.chip.on{color:var(--brass-bright);border-color:var(--line-brass)}
-li{flex:none}
-li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
-.edit{width:100%;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}
-.picker{display:flex;flex-direction:column;gap:var(--s-2)}
-.picker .field{height:28px;font-size:13px}
-.editrow{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;min-width:0}
-.editrow .field{flex:1 1 140px;min-width:0;width:auto}
-.editrow .icon-btn{flex:none}
 .spinrow{display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap;justify-content:center}
 .hub{position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border-radius:50%;background:#020203;border:1px solid var(--brass);display:grid;place-items:center;color:var(--brass);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:0;cursor:pointer;font-family:var(--ui);transition:color 140ms var(--ease),border-color 140ms var(--ease)}
 .hub:hover:not(:disabled){color:var(--brass-bright);border-color:var(--brass-bright)}
@@ -77,7 +70,7 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
 .btn{font:500 12px/1 var(--ui);letter-spacing:.02em;height:28px;padding:0 var(--s-3);border-radius:var(--r-sm);background:transparent;color:var(--text);border:1px solid var(--line-strong);cursor:pointer;transition:border-color 140ms var(--ease),color 140ms var(--ease),background 140ms var(--ease)}
 .btn:hover:not(:disabled){border-color:var(--brass);color:var(--brass-bright)}
 .btn:active:not(:disabled){transform:translateY(.5px)}
-.btn:focus-visible,.field:focus-visible,.seg button:focus-visible,.hub:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.btn:focus-visible,.field:focus-visible,.seg button:focus-visible,.hub:focus-visible,.icon-btn:focus-visible,.star:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .btn.solid{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
 .btn.solid:hover:not(:disabled){background:var(--brass-bright);border-color:var(--brass-bright);color:var(--on-brass)}
 .btn.big{height:38px;padding:0 var(--s-6)}
@@ -94,23 +87,53 @@ li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
 /* list panel */
 .panel{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-4);min-width:0}
 .add{display:flex;gap:var(--s-2)}
+.sw{position:relative;flex:1;min-width:0;display:flex}
+.sw .field{width:100%}
 .field{flex:1;min-width:0;height:38px;background:var(--bg);color:var(--text);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:0 var(--s-3);font:400 13px var(--ui)}
 .field::placeholder{color:var(--text-3)}
 .field:focus{border-color:var(--brass);outline:none}
+textarea.field{height:64px;padding:var(--s-2) var(--s-3);resize:vertical;line-height:1.4;font-family:var(--ui)}
 .field-error{color:var(--danger-text);font-size:12px;margin-top:calc(var(--s-2) * -1 + 2px)}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface-1);border:1px solid var(--line-strong);border-radius:var(--r-md);box-shadow:0 18px 50px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.4);overflow-y:auto;max-height:320px}
+.opt{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-3);padding:var(--s-2) var(--s-3);cursor:pointer}
+.opt+.opt{border-top:1px solid var(--line)}
+.opt:hover,.opt[aria-selected=true]{background:var(--surface-3)}
+.opt .ot{font:500 16px/1.2 var(--display);min-width:0;overflow-wrap:anywhere}
+.opt .om{font:400 11px var(--mono);color:var(--text-3);white-space:nowrap}
 .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--r-sm);overflow:hidden;align-self:flex-start}
 .seg button{height:24px;padding:0 var(--s-3);background:transparent;border:0;color:var(--text-2);font:400 12px var(--ui);cursor:pointer;display:flex;align-items:center;gap:6px}
 .seg button+button{border-left:1px solid var(--line-strong)}
 .seg button[aria-pressed=true]{background:var(--surface-3);color:var(--brass-bright)}
 .seg .n{font:400 10px var(--mono);color:var(--text-3)}
 .seg button[aria-pressed=true] .n{color:var(--brass-dim)}
-ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;max-height:420px;overflow-y:auto}
-li{display:flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-3);background:var(--surface-1);min-height:44px;min-width:0}
+.wfilter{display:flex;flex-direction:column;gap:var(--s-2)}
+.wfilter .gchips{justify-content:flex-start}
+.wfilter .rowf{display:flex;gap:var(--s-3);flex-wrap:wrap;align-items:center}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;max-height:520px;overflow-y:auto}
+li{flex:none;display:flex;align-items:center;gap:var(--s-2);padding:var(--s-2) var(--s-3);background:var(--surface-1);min-height:44px;min-width:0}
 li+li{border-top:1px solid var(--line)}
 li:hover{background:var(--surface-2)}
-li .t{flex:1;min-width:0;font:500 17px/1.15 var(--display);overflow-wrap:anywhere}
+li .tw{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-block:2px}
+li .t{font:500 17px/1.15 var(--display);overflow-wrap:anywhere}
 li.done .t{color:var(--text-2)}
+li .gl{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 li .field{height:28px;font-size:13px}
+.chip{font-size:10px;line-height:1;padding:3px 8px;border:1px solid var(--line);border-radius:var(--r-pill);color:var(--text-2)}
+.chip.on{color:var(--brass-bright);border-color:var(--line-brass)}
+.chip.len{font-family:var(--mono);color:var(--text-3);border-color:transparent;padding-inline:2px}
+.review{font:italic 400 15px/1.3 var(--display);color:var(--text-2);overflow-wrap:anywhere}
+.stars{display:inline-flex;gap:0}
+.star{background:none;border:0;padding:0 1px;font-size:15px;line-height:1;color:var(--text-3);cursor:pointer;transition:color 140ms var(--ease)}
+.star.on{color:var(--brass)}
+.star:hover{color:var(--brass-bright)}
+li.editing{display:block;background:var(--surface-2);padding:var(--s-3)}
+.edit{width:100%;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}
+.picker{display:flex;flex-direction:column;gap:var(--s-2)}
+.picker .field{height:28px;font-size:13px}
+.editrow{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;min-width:0}
+.editrow .field,.editrow .sw{flex:1 1 140px;min-width:0;width:auto}
+.editrow .icon-btn{flex:none}
+.editrow .field.num{flex:0 0 96px}
 .icon-btn{background:transparent;border:1px solid transparent;color:var(--text-2);border-radius:var(--r-sm);height:24px;min-width:24px;padding:0 var(--s-2);font:400 12px var(--ui);cursor:pointer;white-space:nowrap}
 .icon-btn:hover{border-color:var(--line-strong);color:var(--brass-bright)}
 .icon-btn.act{border-color:var(--line-strong);color:var(--text)}
@@ -120,6 +143,34 @@ li .field{height:28px;font-size:13px}
 .none{padding:var(--s-5) var(--s-4);text-align:center;color:var(--text-2);border:1px dashed var(--line-strong);border-radius:var(--r-md)}
 .fine{font-size:11.5px;color:var(--text-3)}
 .status{font-size:11px;font-family:var(--mono);color:var(--text-3)}
+
+/* dashboard */
+.dash{display:flex;flex-direction:column;gap:var(--s-5)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:var(--s-3)}
+.tile{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-1);min-width:0}
+.tile .big{font:500 46px/1.05 var(--display);font-variant-numeric:tabular-nums;color:var(--text)}
+.tile .big small{font:400 14px var(--ui);color:var(--text-2);margin-left:6px}
+.tile .sub{color:var(--text-2);font-size:12px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:var(--s-4);align-items:start}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-4) var(--s-4) var(--s-5);display:flex;flex-direction:column;gap:var(--s-3);min-width:0}
+.card h2{font:500 24px/1.2 var(--display);margin:0}
+.lead{font:400 15px/1.4 var(--ui);color:var(--text-2);margin:0}
+.lead b{color:var(--brass-bright);font-weight:500}
+.bars{display:flex;flex-direction:column;gap:var(--s-2)}
+.bar{display:grid;grid-template-columns:minmax(72px,112px) 1fr 72px;gap:var(--s-3);align-items:center}
+.bar .lab{font-size:12px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{display:block;height:10px;background:var(--surface-3);border-radius:2px;overflow:hidden}
+.bar .fill{display:block;height:100%;background:var(--brass);border-radius:2px}
+.bar .val{font:400 11px var(--mono);color:var(--text-2);text-align:right;font-variant-numeric:tabular-nums}
+.fav{display:flex;flex-direction:column;gap:2px;padding-block:var(--s-2);border-top:1px solid var(--line)}
+.fav:first-of-type{border-top:0}
+.fav .t{font:500 18px/1.2 var(--display)}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)}
+@media(max-width:520px){.twocol{grid-template-columns:1fr}.bar{grid-template-columns:minmax(64px,92px) 1fr 64px}}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv .k{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
+.kv .v{font:500 18px/1.2 var(--display);overflow-wrap:anywhere}
+.kv .m{font:400 11px var(--mono);color:var(--text-3)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -127,11 +178,18 @@ li .field{height:28px;font-size:13px}
 
 <div class="wrap">
   <header>
-    <span class="wordmark">Movie wheel</span>
-    <h1>Spin for <em>tonight's film.</em></h1>
+    <div class="topbar">
+      <span class="wordmark">Movie wheel</span>
+      <nav class="nav" aria-label="Pages">
+        <a href="#wheel" id="navWheel" aria-current="page">Wheel</a>
+        <a href="#dashboard" id="navDash">Dashboard</a>
+        <a href="#chat" id="navChat" hidden>Chat</a>
+      </nav>
+    </div>
+    <h1 id="h1">Spin for <em>tonight's film.</em></h1>
   </header>
 
-  <div class="main">
+  <div class="main" id="viewWheel">
     <section class="stage" aria-label="Wheel">
       <div class="dial">
         <div class="pointer" aria-hidden="true"><svg viewBox="0 0 20 26"><path d="M1 1h18L10 25z" fill="#c9a96a" stroke="#09090a" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
@@ -149,31 +207,40 @@ li .field{height:28px;font-size:13px}
 
     <section class="panel" aria-label="Movie list">
       <form class="add" id="addForm" autocomplete="off">
-        <input class="field" id="newTitle" type="text" placeholder="Add a movie title" aria-label="Movie title" maxlength="120">
+        <div class="sw"><input class="field" id="newTitle" type="text" placeholder="Add a movie title" aria-label="Movie title" maxlength="120"></div>
         <button class="btn quiet" type="button" id="toggleGenres" aria-expanded="false" aria-controls="addGenres">Genres</button>
         <button class="btn" type="submit">Add</button>
       </form>
+      <div class="fine" id="pickInfo" hidden></div>
       <div id="addGenres" hidden></div>
       <div class="field-error" id="err" role="alert" hidden></div>
       <div class="seg" role="group" aria-label="Show">
         <button type="button" id="tabTodo" aria-pressed="true">To watch <span class="n" id="nTodo">0</span></button>
         <button type="button" id="tabDone" aria-pressed="false">Watched <span class="n" id="nDone">0</span></button>
       </div>
+      <div class="wfilter" id="wfilter" hidden></div>
       <div id="listHost"></div>
       <div class="fine" id="note">Mark a movie as watched to take it off the wheel. You can move it back any time.</div>
     </section>
   </div>
+
+  <div class="dash" id="viewDash" hidden></div>
+  <div id="viewChat" hidden></div>
 </div>
 
+<script src="config.js"></script>
+<script src="chat.js"></script>
 <script>
 (function(){
   var TAU = Math.PI*2;
   var C = {bg:'#09090a',s2:'#151518',s3:'#1b1b1f',line:'rgba(236,228,210,0.16)',text:'#ece6d8',brass:'#c9a96a',bright:'#e3c98f',dim:'#8c7647',onBrass:'#14110a'};
-  var movies = [];            // {id,title,watched,addedAt}
+  var movies = [];            // {id,title,watched,genres,runtime,year,rating,review,addedAt,watchedAt}
   var tab = 'todo';
   var editingId = null;
   var rot = 0, spinning = false, winnerId = null, dirty = false;
   var store = null;
+  var lib = null;             // the film library: {m:[{title,year,runtime,genres,n}], byNorm:Map}
+  var view = 'wheel', dashMode = 'count';
 
   var $ = function(id){return document.getElementById(id)};
   var canvas = $('wheel'), ctx = canvas.getContext('2d');
@@ -185,21 +252,84 @@ li .field{height:28px;font-size:13px}
   function uid(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
   var local = {
-    add:function(t,g){ movies.push({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now()}); lsSave(); refresh(); },
+    add:function(t,g,x){ movies.push(Object.assign({id:uid(),title:t,watched:false,genres:g||[],addedAt:Date.now()},x||{})); lsSave(); refresh(); },
     patch:function(id,p){ var m=movies.find(function(x){return x.id===id}); if(m){Object.assign(m,p); lsSave(); refresh();} },
     remove:function(id){ movies=movies.filter(function(x){return x.id!==id}); lsSave(); refresh(); }
   };
   function dbStore(db){
     var col = db.collection('movies');
     col.onSnapshot(function(snap){
-      movies = snap.docs.map(function(d){ var v=d.data()||{}; return {id:d.id,title:String(v.title||''),watched:!!v.watched,genres:Array.isArray(v.genres)?v.genres.map(String):[],watchedAt:v.watchedAt||0,addedAt:v.addedAt||0}; });
+      movies = snap.docs.map(function(d){ var v=d.data()||{};
+        return {id:d.id,title:String(v.title||''),watched:!!v.watched,genres:Array.isArray(v.genres)?v.genres.map(String):[],
+          runtime:+v.runtime||0,year:+v.year||0,rating:+v.rating||0,review:String(v.review||''),watchedAt:v.watchedAt||0,addedAt:v.addedAt||0}; });
       refresh();
     }, function(){ store = local; movies = lsLoad(); refresh(); });
     return {
-      add:function(t,g){ return col.add({title:t,watched:false,genres:g||[],addedAt:Date.now()}); },
+      add:function(t,g,x){ return col.add(Object.assign({title:t,watched:false,genres:g||[],addedAt:Date.now()},x||{})); },
       patch:function(id,p){ return col.doc(id).update(p); },
       remove:function(id){ return col.doc(id).delete(); }
     };
+  }
+
+  /* ---------- helpers ---------- */
+  function fmtLen(min){ if(!min) return ''; var h=Math.floor(min/60), m=min%60; return h? h+'h '+(m<10?'0':'')+m+'m' : m+'m'; }
+  function norm(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+  function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+
+  /* ---------- film library: runtimes and genres to suggest while typing ---------- */
+  function loadLib(){
+    fetch('movies-db.json').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+      var names=d.g, m=d.m.map(function(r,i){
+        return {title:r[0],year:r[1],runtime:r[2],genres:r[3]?r[3].split(',').map(function(k){return names[+k]}):[],n:norm(r[0]),i:i};
+      });
+      var byNorm=new Map(); m.forEach(function(x){ if(!byNorm.has(x.n)) byNorm.set(x.n,x); });
+      lib={m:m,byNorm:byNorm};
+      if(view==='dash') renderDash();
+    }).catch(function(){});
+  }
+  function search(q){
+    if(!lib) return [];
+    var qn=norm(q); if(qn.length<2) return [];
+    var toks=qn.split(' '), t0=[],t1=[],t2=[];
+    for(var i=0;i<lib.m.length;i++){
+      var x=lib.m[i], n=x.n;
+      if(n.indexOf(qn)===0){ t0.push(x); if(t0.length>=8) break; }
+      else if(t1.length<8 && n.indexOf(' '+qn)>=0) t1.push(x);
+      else if(t2.length<8 && toks.length>1 && toks.every(function(t){return n.indexOf(t)>=0})) t2.push(x);
+    }
+    return t0.concat(t1,t2).slice(0,8);
+  }
+  function exactMatch(title){ return lib ? lib.byNorm.get(norm(title)) : null; }
+
+  // dropdown of library matches under a text input (the input's parent is a .sw wrapper)
+  function attachSuggest(input,onPick){
+    var box=el('div','suggest'); box.setAttribute('role','listbox'); box.hidden=true;
+    input.parentNode.append(box);
+    input.setAttribute('role','combobox'); input.setAttribute('aria-autocomplete','list'); input.setAttribute('aria-expanded','false');
+    var items=[], active=-1;
+    function hide(){ box.hidden=true; active=-1; input.setAttribute('aria-expanded','false'); }
+    function paint(){ [].forEach.call(box.children,function(c,i){ c.setAttribute('aria-selected',String(i===active)); }); }
+    function pick(i){ var x=items[i]; if(!x) return; input.value=x.title; hide(); onPick(x); }
+    function show(){
+      items=search(input.value); box.innerHTML='';
+      if(!items.length){ hide(); return; }
+      items.forEach(function(x,i){
+        var o=el('div','opt'); o.setAttribute('role','option'); o.setAttribute('aria-selected','false');
+        o.append(el('span','ot',x.title), el('span','om',[x.year||'',fmtLen(x.runtime)].filter(Boolean).join(' · ')));
+        o.onmousedown=function(e){ e.preventDefault(); pick(i); };
+        box.append(o);
+      });
+      box.hidden=false; active=-1; input.setAttribute('aria-expanded','true');
+    }
+    input.addEventListener('input',show);
+    input.addEventListener('keydown',function(e){
+      if(box.hidden) return;
+      if(e.key==='ArrowDown'){ e.preventDefault(); active=(active+1)%items.length; paint(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); active=(active-1+items.length)%items.length; paint(); }
+      else if(e.key==='Enter' && active>=0){ e.preventDefault(); e.stopPropagation(); pick(active); }
+      else if(e.key==='Escape'){ e.stopPropagation(); hide(); }
+    });
+    input.addEventListener('blur',function(){ setTimeout(hide,120); });
   }
 
   /* ---------- wheel drawing ---------- */
@@ -216,9 +346,9 @@ li .field{height:28px;font-size:13px}
     var t=todo(); if(!selected.length) return t;
     return t.filter(function(m){ return gens(m).some(function(g){ return selected.indexOf(gkey(g))>=0; }); });
   }
-  function genreCounts(){          // genres on unwatched movies: [{key,name,n}] by name
+  function genreCounts(list){      // genres on a list of movies: [{key,name,n}] by name
     var map={};
-    todo().forEach(function(m){ gens(m).forEach(function(g){ var k=gkey(g); if(!k) return; (map[k]=map[k]||{key:k,name:gname(g),n:0}).n++; }); });
+    list.forEach(function(m){ gens(m).forEach(function(g){ var k=gkey(g); if(!k) return; (map[k]=map[k]||{key:k,name:gname(g),n:0}).n++; }); });
     return Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return a.name.localeCompare(b.name)});
   }
   function allGenreNames(){        // choices when editing: presets, anything already used, anything added on this row
@@ -230,11 +360,11 @@ li .field{height:28px;font-size:13px}
   }
   // Genre buttons plus a box to type a new one. Toggles names in `list` (mutated in place).
   function genrePicker(list){
-    var wrap=document.createElement('div'); wrap.className='picker';
-    var chips=document.createElement('div'); chips.className='gchips'; chips.style.justifyContent='flex-start';
+    var wrap=el('div','picker');
+    var chips=el('div','gchips'); chips.style.justifyContent='flex-start';
     var has=function(name){ return list.some(function(x){return gkey(x)===gkey(name)}); };
     var addChip=function(name,on){
-      var b=document.createElement('button'); b.type='button'; b.className='gchip'; b.textContent=name; b.setAttribute('aria-pressed',String(on));
+      var b=el('button','gchip',name); b.type='button'; b.setAttribute('aria-pressed',String(on));
       b.onclick=function(){
         var k=gkey(name), i=list.findIndex(function(g){return gkey(g)===k});
         if(i>=0){ list.splice(i,1); b.setAttribute('aria-pressed','false'); } else { list.push(name); b.setAttribute('aria-pressed','true'); }
@@ -242,48 +372,45 @@ li .field{height:28px;font-size:13px}
       chips.append(b); return b;
     };
     allGenreNames().forEach(function(g){ addChip(g, has(g)); });
-    var cu=document.createElement('div'); cu.className='editrow';
-    var ci=document.createElement('input'); ci.className='field'; ci.placeholder='Type a new genre'; ci.maxLength=24; ci.setAttribute('aria-label','New genre');
+    var cu=el('div','editrow');
+    var ci=el('input','field'); ci.placeholder='Type a new genre'; ci.maxLength=24; ci.setAttribute('aria-label','New genre');
     var addCustom=function(){
       var g=gname(ci.value); if(!g) return; ci.value='';
       var ex=Array.prototype.find.call(chips.children,function(c){return gkey(c.textContent)===gkey(g)});
       if(ex){ if(ex.getAttribute('aria-pressed')!=='true') ex.click(); } else { addChip(g,false).click(); }
     };
     ci.onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); addCustom(); } };
-    var ab=btn('Add genre','icon-btn act',addCustom);
-    cu.append(ci,ab); wrap.append(chips,cu);
+    cu.append(ci,btn('Add genre','icon-btn act',addCustom));
+    wrap.append(chips,cu);
     return wrap;
   }
   function renderFilter(){
-    var host=$('filter'), counts=genreCounts();
+    var host=$('filter'), counts=genreCounts(todo());
     selected=selected.filter(function(k){ return counts.some(function(c){return c.key===k}); });
     host.innerHTML='';
     if(!counts.length){
-      var h=document.createElement('div'); h.className='fine'; h.style.textAlign='center';
-      h.textContent='Click Edit on a movie to give it genres, then you can spin one genre at a time.';
+      var h=el('div','fine','Click Edit on a movie to give it genres, then you can spin one genre at a time.'); h.style.textAlign='center';
       host.append(h); return;
     }
-    var e=document.createElement('span'); e.className='eyebrow'; e.textContent='Spin from'; host.append(e);
-    var row=document.createElement('div'); row.className='gchips'; row.setAttribute('role','group'); row.setAttribute('aria-label','Genres on the wheel');
-    var all=document.createElement('button'); all.type='button'; all.className='gchip'; all.textContent='All genres';
+    host.append(el('span','eyebrow','Spin from'));
+    var row=el('div','gchips'); row.setAttribute('role','group'); row.setAttribute('aria-label','Genres on the wheel');
+    var all=el('button','gchip','All genres'); all.type='button';
     all.setAttribute('aria-pressed',String(!selected.length)); all.disabled=spinning;
     all.onclick=function(){ selected=[]; filterChanged(); };
     row.append(all);
     counts.forEach(function(c){
-      var b=document.createElement('button'); b.type='button'; b.className='gchip'; b.disabled=spinning;
+      var b=el('button','gchip'); b.type='button'; b.disabled=spinning;
       b.setAttribute('aria-pressed',String(selected.indexOf(c.key)>=0));
-      b.append(document.createTextNode(c.name+' '));
-      var n=document.createElement('span'); n.className='n'; n.textContent=c.n; b.append(n);
+      b.append(document.createTextNode(c.name+' '), el('span','n',c.n));
       b.onclick=function(){ var i=selected.indexOf(c.key); if(i>=0) selected.splice(i,1); else selected.push(c.key); filterChanged(); };
       row.append(b);
     });
     host.append(row);
-    var note=document.createElement('div'); note.className='status';
     var p=pool().length, all_=todo().length;
-    note.textContent = selected.length ? p+' of '+all_+' movies on the wheel' : all_+' movies on the wheel';
-    host.append(note);
+    host.append(el('div','status', selected.length ? p+' of '+all_+' movies on the wheel' : all_+' movies on the wheel'));
   }
-  function filterChanged(){ winnerId=null; $('result').innerHTML=''; renderFilter(); syncControls(); draw(); render(); }
+  function filterChanged(){ if(spinning) return; winnerId=null; $('result').innerHTML=''; renderFilter(); syncControls(); draw(); render(); }
+
   function fit(text, maxW){
     if(ctx.measureText(text).width<=maxW) return text;
     var s=text; while(s.length>1 && ctx.measureText(s+'…').width>maxW) s=s.slice(0,-1);
@@ -295,7 +422,6 @@ li .field{height:28px;font-size:13px}
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,size,size);
     var cx=size/2, cy=size/2, R=size/2-14, items=pool(), n=items.length;
-    // outer ring
     ctx.beginPath(); ctx.arc(cx,cy,R+8,0,TAU); ctx.strokeStyle=C.dim; ctx.lineWidth=1; ctx.stroke();
     if(n<2){
       ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.fillStyle=C.s2; ctx.fill(); ctx.strokeStyle=C.line; ctx.stroke();
@@ -303,7 +429,7 @@ li .field{height:28px;font-size:13px}
     }
     var seg=TAU/n;
     var fs = Math.max(10, Math.min(16, 15 - n*0.12));
-    ctx.font = '500 '+fs+'px Inter, "Segoe UI", sans-serif';
+    ctx.font = '500 '+fs+'px "Inter Variable", Inter, "Segoe UI", sans-serif';
     for(var i=0;i<n;i++){
       var a0=rot+i*seg, a1=a0+seg, win = items[i].id===winnerId;
       ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a0,a1); ctx.closePath();
@@ -315,7 +441,6 @@ li .field{height:28px;font-size:13px}
       ctx.fillText(fit(items[i].title, R-80), R-16, 0);
       ctx.restore();
     }
-    // rim ticks
     for(var j=0;j<n;j++){
       var a=rot+j*seg;
       ctx.beginPath(); ctx.arc(cx+Math.cos(a)*(R+8), cy+Math.sin(a)*(R+8), 2.2, 0, TAU); ctx.fillStyle=C.brass; ctx.fill();
@@ -389,7 +514,7 @@ li .field{height:28px;font-size:13px}
   function spin(){
     var items=pool(), n=items.length;
     if(spinning||n<2) return;
-    spinning=true; winnerId=null; $('result').innerHTML=''; syncControls();
+    spinning=true; winnerId=null; $('result').innerHTML=''; syncControls(); renderFilter();
     whoosh();
     var lastIdx=indexAtPointer(n), lastRot=rot, lastT=performance.now();
     var seg=TAU/n, target=Math.floor(Math.random()*n), off=0.12+Math.random()*0.76;
@@ -411,81 +536,148 @@ li .field{height:28px;font-size:13px}
         spinning=false;
         var idx=indexAtPointer(n); winnerId=items[idx].id;
         chime();
-        draw(); showResult(items[idx]); syncControls();
+        draw(); showResult(items[idx]); syncControls(); renderFilter();
         if(dirty){ dirty=false; refresh(); }
       }
     })(t0);
   }
   function showResult(m){
     var box=$('result'); box.innerHTML='';
-    var r=document.createElement('div'); r.className='result';
-    var e=document.createElement('span'); e.className='eyebrow'; e.style.color='var(--brass-dim)'; e.textContent='Tonight you watch';
-    var h=document.createElement('h2'); h.textContent=m.title;
-    var row=document.createElement('div'); row.className='row';
-    var b1=document.createElement('button'); b1.className='btn solid'; b1.textContent='Mark as watched';
+    var r=el('div','result');
+    var e=el('span','eyebrow','Tonight you watch'); e.style.color='var(--brass-dim)';
+    var h=el('h2',null,m.title);
+    var meta=[fmtLen(m.runtime), m.year||'', gens(m).map(gname).join(', ')].filter(Boolean).join(' · ');
+    var row=el('div','row');
+    var b1=el('button','btn solid','Mark as watched');
     b1.onclick=function(){ winnerId=null; box.innerHTML=''; store.patch(m.id,{watched:true,watchedAt:Date.now()}); };
-    var b2=document.createElement('button'); b2.className='btn'; b2.textContent='Spin again';
-    b2.onclick=function(){ spin(); };
-    var b3=document.createElement('button'); b3.className='btn quiet'; b3.textContent='Keep on the list';
-    b3.onclick=function(){ winnerId=null; box.innerHTML=''; draw(); };
-    row.append(b1,b2,b3); r.append(e,h,row); box.append(r);
+    var b2=el('button','btn','Spin again'); b2.onclick=function(){ spin(); };
+    var b3=el('button','btn quiet','Keep on the list'); b3.onclick=function(){ winnerId=null; box.innerHTML=''; draw(); };
+    row.append(b1,b2,b3); r.append(e,h); if(meta) r.append(el('div','status',meta)); r.append(row); box.append(r);
   }
 
   /* ---------- list ---------- */
+  var wf={mode:'all',sort:'recent',genres:[]};     // filters on the Watched tab
   function showErr(msg){ var e=$('err'); e.hidden=!msg; e.textContent=msg||''; }
+  function btn(label,cls,fn){ var b=el('button',cls,label); b.type='button'; b.onclick=fn; return b; }
+  function starRow(val,onSet,label){
+    var wrap=el('span','stars'); wrap.setAttribute('role','group'); wrap.setAttribute('aria-label',label||'Rating');
+    function paint(){ [].forEach.call(wrap.children,function(b,i){ b.classList.toggle('on',i<val); b.setAttribute('aria-pressed',String(i+1===val)); }); }
+    for(var i=1;i<=5;i++){ (function(n){
+      var b=el('button','star','★'); b.type='button'; b.setAttribute('aria-label',n+(n===1?' star':' stars'));
+      b.onclick=function(){ val=(val===n)?0:n; paint(); onSet(val); };
+      wrap.append(b);
+    })(i); }
+    paint(); return wrap;
+  }
+  function watchedList(){
+    var l=movies.filter(function(m){return m.watched});
+    if(wf.mode==='fav') l=l.filter(function(m){return m.rating>=4});
+    if(wf.mode==='unrated') l=l.filter(function(m){return !m.rating});
+    if(wf.genres.length) l=l.filter(function(m){ return gens(m).some(function(g){return wf.genres.indexOf(gkey(g))>=0}); });
+    if(wf.sort==='rating') l.sort(function(a,b){return (b.rating-a.rating)||((b.watchedAt||0)-(a.watchedAt||0))});
+    else l.sort(function(a,b){return (b.watchedAt||0)-(a.watchedAt||0)});
+    return l;
+  }
+  function renderWFilter(){
+    var host=$('wfilter'); host.hidden = tab!=='done'; host.innerHTML='';
+    if(tab!=='done') return;
+    var watched=movies.filter(function(m){return m.watched});
+    var row=el('div','rowf');
+    var seg=el('div','seg'); seg.setAttribute('role','group'); seg.setAttribute('aria-label','Filter watched movies');
+    [['all','All'],['fav','Favorites'],['unrated','Unrated']].forEach(function(o){
+      var b=el('button',null,o[1]); b.type='button'; b.setAttribute('aria-pressed',String(wf.mode===o[0]));
+      b.onclick=function(){ wf.mode=o[0]; render(); }; seg.append(b);
+    });
+    var seg2=el('div','seg'); seg2.setAttribute('role','group'); seg2.setAttribute('aria-label','Sort watched movies');
+    [['recent','Recent'],['rating','Top rated']].forEach(function(o){
+      var b=el('button',null,o[1]); b.type='button'; b.setAttribute('aria-pressed',String(wf.sort===o[0]));
+      b.onclick=function(){ wf.sort=o[0]; render(); }; seg2.append(b);
+    });
+    row.append(seg,seg2); host.append(row);
+    var counts=genreCounts(watched);
+    wf.genres=wf.genres.filter(function(k){return counts.some(function(c){return c.key===k})});
+    if(counts.length){
+      var chips=el('div','gchips');
+      counts.forEach(function(c){
+        var b=el('button','gchip'); b.type='button'; b.setAttribute('aria-pressed',String(wf.genres.indexOf(c.key)>=0));
+        b.append(document.createTextNode(c.name+' '),el('span','n',c.n));
+        b.onclick=function(){ var i=wf.genres.indexOf(c.key); if(i>=0) wf.genres.splice(i,1); else wf.genres.push(c.key); render(); };
+        chips.append(b);
+      });
+      host.append(chips);
+    }
+  }
   function render(){
-    var todoList=todo(), done=movies.filter(function(m){return m.watched}).sort(function(a,b){return (b.watchedAt||0)-(a.watchedAt||0)});
-    $('nTodo').textContent=todoList.length; $('nDone').textContent=done.length;
+    var todoList=todo(), doneAll=movies.filter(function(m){return m.watched});
+    $('nTodo').textContent=todoList.length; $('nDone').textContent=doneAll.length;
     $('tabTodo').setAttribute('aria-pressed',tab==='todo'); $('tabDone').setAttribute('aria-pressed',tab==='done');
-    var items = tab==='todo'? todoList : done;
+    renderWFilter();
+    var items = tab==='todo'? todoList : watchedList();
     var host=$('listHost'); host.innerHTML='';
     if(!items.length){
-      var d=document.createElement('div'); d.className='none';
-      d.textContent = tab==='todo' ? 'Nothing left to watch. Add a movie above.' : 'Nothing watched yet. Mark a film as watched and it moves here.';
-      host.append(d); return;
+      var msg = tab==='todo' ? 'Nothing left to watch. Add a movie above.'
+        : (doneAll.length ? 'No watched movies match these filters.' : 'Nothing watched yet. Mark a film as watched and it moves here.');
+      host.append(el('div','none',msg)); return;
     }
-    var ul=document.createElement('ul');
+    var ul=el('ul');
     items.forEach(function(m){
-      var li=document.createElement('li'); if(m.watched) li.className='done';
-      if(editingId===m.id){
-        var inp=document.createElement('input'); inp.className='field'; inp.value=m.title; inp.maxLength=120; inp.setAttribute('aria-label','Edit title');
-        var save=function(){
-          var v=inp.value.trim(); editingId=null;
-          if(!v){ render(); return; }
-          if(v.toLowerCase()!==m.title.toLowerCase() && movies.some(function(o){return o.id!==m.id && o.title.toLowerCase()===v.toLowerCase()})) v=m.title;
-          store.patch(m.id,{title:v,genres:editGenres.slice()});
-        };
-        var cancel=function(){editingId=null;render();};
-        inp.onkeydown=function(e){ if(e.key==='Enter') save(); if(e.key==='Escape') cancel(); };
-        var ed=document.createElement('div'); ed.className='edit';
-        var top=document.createElement('div'); top.className='editrow';
-        top.append(inp,btn('Save','icon-btn act',save),btn('Cancel','icon-btn',cancel));
-        var lab=document.createElement('span'); lab.className='eyebrow'; lab.textContent='Genres';
-        ed.append(top,lab,genrePicker(editGenres)); li.className='editing'; li.append(ed); ul.append(li);
-        setTimeout(function(){inp.focus();inp.select();},0); return;
-      }
-      var tw=document.createElement('div'); tw.className='tw';
-      var t=document.createElement('span'); t.className='t'; t.textContent=m.title; tw.append(t);
-      if(gens(m).length){
-        var gl=document.createElement('div'); gl.className='gl';
-        gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){
-          var c=document.createElement('span'); c.className='chip'+(selected.indexOf(gkey(g))>=0?' on':''); c.textContent=gname(g); gl.append(c);
-        });
-        tw.append(gl);
-      }
+      var li=el('li'); if(m.watched) li.className='done';
+      if(editingId===m.id){ editRow(m,li); ul.append(li); return; }
+      var tw=el('div','tw');
+      tw.append(el('span','t',m.title));
+      var gl=el('div','gl');
+      if(m.watched) gl.append(starRow(m.rating,function(n){ store.patch(m.id,{rating:n}); },'Rating for '+m.title));
+      var lenTxt=[fmtLen(m.runtime), m.year||''].filter(Boolean).join(' · ');
+      if(lenTxt) gl.append(el('span','chip len',lenTxt));
+      gens(m).slice().sort(function(a,b){return a.localeCompare(b)}).forEach(function(g){
+        gl.append(el('span','chip'+(selected.indexOf(gkey(g))>=0?' on':''),gname(g)));
+      });
+      if(gl.children.length) tw.append(gl);
+      if(m.review) tw.append(el('div','review',m.review));
       li.append(tw);
-      if(m.watched){
-        li.append(btn('Move back to list','icon-btn act',function(){store.patch(m.id,{watched:false});}));
-      } else {
-        li.append(btn('✓ Mark watched','icon-btn act',function(){store.patch(m.id,{watched:true,watchedAt:Date.now()});}));
-        li.append(btn('Edit','icon-btn',function(){editingId=m.id; editGenres=gens(m).map(gname); render();}));
-      }
+      if(m.watched) li.append(btn('Move back to list','icon-btn act',function(){store.patch(m.id,{watched:false});}));
+      else li.append(btn('✓ Mark watched','icon-btn act',function(){store.patch(m.id,{watched:true,watchedAt:Date.now()});}));
+      li.append(btn('Edit','icon-btn',function(){editingId=m.id; editGenres=gens(m).map(gname); render();}));
       var x=btn('×','icon-btn x',function(){store.remove(m.id);}); x.setAttribute('aria-label','Remove '+m.title); li.append(x);
       ul.append(li);
     });
     host.append(ul);
   }
-  function btn(label,cls,fn){ var b=document.createElement('button'); b.type='button'; b.className=cls; b.textContent=label; b.onclick=fn; return b; }
+  function editRow(m,li){
+    var d={year:m.year||0,rating:m.rating||0};
+    var ed=el('div','edit'); li.className='editing';
+    var inp=el('input','field'); inp.value=m.title; inp.maxLength=120; inp.setAttribute('aria-label','Title');
+    var sw=el('div','sw'); sw.append(inp);
+    var len=el('input','field num'); len.type='number'; len.min='0'; len.max='999'; len.placeholder='Minutes'; len.setAttribute('aria-label','Length in minutes'); if(m.runtime) len.value=m.runtime;
+    var pickerHost=el('div');
+    var drawPicker=function(){ pickerHost.innerHTML=''; pickerHost.append(genrePicker(editGenres)); };
+    var rv=null;
+    var save=function(){
+      var v=inp.value.trim(); editingId=null;
+      if(!v){ render(); return; }
+      if(v.toLowerCase()!==m.title.toLowerCase() && movies.some(function(o){return o.id!==m.id && o.title.toLowerCase()===v.toLowerCase()})) v=m.title;
+      var patch={title:v,genres:editGenres.slice(),runtime:Math.max(0,Math.round(+len.value)||0),year:d.year};
+      if(m.watched){ patch.rating=d.rating; patch.review=rv.value.trim().slice(0,280); }
+      store.patch(m.id,patch);
+    };
+    var cancel=function(){editingId=null;render();};
+    inp.onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); save(); } if(e.key==='Escape') cancel(); };
+    var top=el('div','editrow'); top.append(sw,len,btn('Save','icon-btn act',save),btn('Cancel','icon-btn',cancel));
+    ed.append(top);
+    attachSuggest(inp,function(x){
+      len.value=x.runtime||''; d.year=x.year||0;
+      if(!editGenres.length && x.genres.length){ editGenres.push.apply(editGenres,x.genres); drawPicker(); }
+    });
+    if(m.watched){
+      ed.append(el('span','eyebrow','Your rating'));
+      ed.append(starRow(d.rating,function(n){ d.rating=n; },'Rating'));
+      rv=el('textarea','field'); rv.maxLength=280; rv.placeholder='Short review (optional)'; rv.value=m.review||''; rv.setAttribute('aria-label','Review');
+      ed.append(rv);
+    }
+    ed.append(el('span','eyebrow','Genres')); drawPicker(); ed.append(pickerHost);
+    li.append(ed);
+    setTimeout(function(){inp.focus();inp.select();},0);
+  }
 
   function syncControls(){
     var n=pool().length, can=n>=2&&!spinning;
@@ -500,6 +692,132 @@ li .field{height:28px;font-size:13px}
     if(spinning){ dirty=true; return; }
     if(winnerId && !pool().some(function(m){return m.id===winnerId})) { winnerId=null; $('result').innerHTML=''; }
     renderFilter(); render(); syncControls(); draw();
+    if(view==='dash') renderDash();
+  }
+
+  /* ---------- dashboard ---------- */
+  function bars(rows,fmt){          // rows: [{label,value}] already sorted
+    var wrap=el('div','bars'), max=Math.max.apply(null,rows.map(function(r){return r.value}).concat([1]));
+    rows.forEach(function(r){
+      var b=el('div','bar'); b.append(el('span','lab',r.label));
+      var tr=el('span','track'), f=el('span','fill'); f.style.width=(r.value>0?Math.max(2,Math.round(r.value/max*100)):0)+'%'; tr.append(f); b.append(tr);
+      b.append(el('span','val',fmt?fmt(r):String(r.value))); wrap.append(b);
+    });
+    return wrap;
+  }
+  function card(title){ var c=el('section','card'); c.append(el('h2',null,title)); return c; }
+  function tile(label,big,unit,sub){
+    var t=el('div','tile'); t.append(el('span','eyebrow',label));
+    var b=el('div','big',big); if(unit) b.append(el('small',null,unit)); t.append(b);
+    if(sub) t.append(el('div','sub',sub)); return t;
+  }
+  function kv(k,v,m){ var d=el('div','kv'); d.append(el('span','k',k),el('span','v',v)); if(m) d.append(el('span','m',m)); return d; }
+  function renderDash(){
+    var host=$('viewDash'); host.innerHTML='';
+    var W=movies.filter(function(m){return m.watched}), T=todo();
+    if(!W.length){
+      var c=card('Nothing to show yet'); c.append(el('p','lead','Mark a few movies as watched and this page fills in with your hours, genres and ratings.')); host.append(c); return;
+    }
+    var withLen=W.filter(function(m){return m.runtime>0}), mins=withLen.reduce(function(s,m){return s+m.runtime},0);
+    var rated=W.filter(function(m){return m.rating>0}), avg=rated.length? rated.reduce(function(s,m){return s+m.rating},0)/rated.length : 0;
+    var tiles=el('div','tiles');
+    tiles.append(tile('Movies watched',String(W.length),'', T.length+' still to watch'));
+    tiles.append(tile('Time watched',String(Math.floor(mins/60)),'h '+(mins%60)+'m', withLen.length? (mins/1440).toFixed(1)+' days · '+withLen.length+' of '+W.length+' films have a length' : 'No lengths yet'));
+    tiles.append(tile('Average rating',rated.length? avg.toFixed(1):'–','★', rated.length? rated.length+' of '+W.length+' rated' : 'Rate a movie to start'));
+    tiles.append(tile('Average length',withLen.length? fmtLen(Math.round(mins/withLen.length)) : '–','', withLen.length? 'across '+withLen.length+' films' : ''));
+    host.append(tiles);
+
+    // genre stats
+    var gm={};
+    W.forEach(function(m){ gens(m).forEach(function(g){ var k=gkey(g); var s=gm[k]||(gm[k]={name:gname(g),n:0,mins:0,rs:0,rn:0}); s.n++; s.mins+=m.runtime||0; if(m.rating){ s.rs+=m.rating; s.rn++; } }); });
+    var gl=Object.keys(gm).map(function(k){return gm[k]});
+    var grid=el('div','dgrid');
+
+    var cg=card('What you watch most');
+    if(gl.length){
+      var top=gl.slice().sort(function(a,b){return b.n-a.n})[0];
+      var p=cg.appendChild(el('p','lead')); p.innerHTML='<b></b> leads with <b></b> of '+W.length+' films ('+Math.round(top.n/W.length*100)+'%).';
+      p.children[0].textContent=top.name; p.children[1].textContent=top.n;
+      var seg=el('div','seg'); seg.setAttribute('role','group'); seg.setAttribute('aria-label','Chart by');
+      [['count','By films'],['hours','By hours']].forEach(function(o){
+        var b=el('button',null,o[1]); b.type='button'; b.setAttribute('aria-pressed',String(dashMode===o[0])); b.onclick=function(){ dashMode=o[0]; renderDash(); }; seg.append(b);
+      });
+      cg.append(seg);
+      var rows=gl.map(function(s){return {label:s.name,value:dashMode==='hours'?Math.round(s.mins/6)/10:s.n,s:s}}).sort(function(a,b){return b.value-a.value}).slice(0,10);
+      cg.append(bars(rows,function(r){ return dashMode==='hours'? r.value+' h' : r.s.n+' · '+Math.round(r.s.n/W.length*100)+'%'; }));
+      var untagged=W.filter(function(m){return !gens(m).length}).length;
+      if(untagged) cg.append(el('div','fine',untagged+' watched films have no genre yet. Add them with Edit.'));
+    } else cg.append(el('p','lead','Add genres to your watched movies with Edit and the breakdown appears here.'));
+    grid.append(cg);
+
+    var cr=card('How you rate');
+    if(rated.length){
+      var dist=[5,4,3,2,1].map(function(n){return {label:n+' ★',value:rated.filter(function(m){return m.rating===n}).length}});
+      cr.append(bars(dist,function(r){return String(r.value)}));
+      var best=gl.filter(function(s){return s.rn>=3}).map(function(s){return {label:s.name,value:s.rs/s.rn,n:s.rn}}).sort(function(a,b){return b.value-a.value}).slice(0,5);
+      if(best.length){ cr.append(el('span','eyebrow','Best-rated genres (3+ rated films)')); cr.append(bars(best.map(function(b){return {label:b.label,value:b.value,n:b.n}}),function(r){return r.value.toFixed(1)+' ★ · '+r.n})); }
+    } else cr.append(el('p','lead','Give your watched movies 1 to 5 stars in the list and your ratings show up here.'));
+    grid.append(cr);
+
+    var cf=card('Favorites');
+    var favs=W.filter(function(m){return m.rating>=4}).sort(function(a,b){return (b.rating-a.rating)||((b.watchedAt||0)-(a.watchedAt||0))}).slice(0,12);
+    if(favs.length){
+      favs.forEach(function(m){
+        var f=el('div','fav'); f.append(el('span','t',m.title));
+        var meta=el('div','gl'); meta.append(starRow(m.rating,function(n){ store.patch(m.id,{rating:n}); },'Rating for '+m.title));
+        var lt=[fmtLen(m.runtime),m.year||''].filter(Boolean).join(' · '); if(lt) meta.append(el('span','chip len',lt)); f.append(meta);
+        if(m.review) f.append(el('div','review',m.review));
+        cf.append(f);
+      });
+    } else cf.append(el('p','lead','Movies you rate 4 or 5 stars collect here.'));
+    grid.append(cf);
+
+    var cd=card('By decade');
+    var dec={}; W.forEach(function(m){ if(m.year){ var k=Math.floor(m.year/10)*10; dec[k]=(dec[k]||0)+1; } });
+    var dk=Object.keys(dec).map(Number).sort(function(a,b){return a-b});
+    if(dk.length){
+      cd.append(bars(dk.map(function(k){return {label:k+'s',value:dec[k]}}),function(r){return String(r.value)}));
+      var noy=W.filter(function(m){return !m.year}).length; if(noy) cd.append(el('div','fine',noy+' watched films have no release year yet.'));
+    } else cd.append(el('p','lead','Release years come with the library lookup. Fill in lengths below to add them.'));
+    grid.append(cd);
+    host.append(grid);
+
+    var ce=card('Extremes and backlog');
+    var two=el('div','twocol');
+    var byLen=withLen.slice().sort(function(a,b){return b.runtime-a.runtime});
+    if(byLen.length){ two.append(kv('Longest watched',byLen[0].title,fmtLen(byLen[0].runtime)), kv('Shortest watched',byLen[byLen.length-1].title,fmtLen(byLen[byLen.length-1].runtime))); }
+    var tmins=T.reduce(function(s,m){return s+(m.runtime||0)},0), tlen=T.filter(function(m){return m.runtime>0}).length;
+    two.append(kv('Still to watch',T.length+' films', tlen? Math.floor(tmins/60)+'h '+(tmins%60)+'m across '+tlen+' with a length' : 'No lengths yet'));
+    if(top2()) two.append(kv('Most-watched genre',top2().name,top2().n+' films'));
+    function top2(){ return gl.length? gl.slice().sort(function(a,b){return b.n-a.n})[0] : null; }
+    ce.append(two); host.append(ce);
+
+    var missing=movies.filter(function(m){return !m.runtime});
+    if(missing.length){
+      var cm=card('Fill in lengths');
+      cm.append(el('p','lead',missing.length+' of '+movies.length+' movies have no length yet. Matching by exact title against the film library fills in length and release year. Anything that does not match, set with Edit.'));
+      var out=el('div','status'); out.id='fillOut';
+      var b=btn('Fill from library','btn solid',function(){
+        if(!lib){ out.textContent='The film library has not loaded.'; return; }
+        var hit=0, miss=[];
+        missing.forEach(function(m){ var x=exactMatch(m.title); if(x){ var p={runtime:x.runtime,year:m.year||x.year}; if(!gens(m).length&&x.genres.length) p.genres=x.genres; store.patch(m.id,p); hit++; } else miss.push(m.title); });
+        out.textContent='Matched '+hit+'. No match for: '+(miss.join(', ')||'none')+'.';
+      });
+      b.disabled=!lib; cm.append(b,out); host.append(cm);
+    }
+  }
+
+  /* ---------- views ---------- */
+  function route(){
+    view = location.hash==='#dashboard' ? 'dash' : (location.hash==='#chat' && window.MW_CHAT ? 'chat' : 'wheel');
+    $('viewWheel').hidden = view!=='wheel'; $('viewDash').hidden = view!=='dash'; $('viewChat').hidden = view!=='chat';
+    [['wheel','navWheel'],['dash','navDash'],['chat','navChat']].forEach(function(p){
+      if(view===p[0]) $(p[1]).setAttribute('aria-current','page'); else $(p[1]).removeAttribute('aria-current');
+    });
+    $('h1').innerHTML = view==='dash' ? 'Your watching, <em>in numbers.</em>' : view==='chat' ? 'Ask about <em>your movies.</em>' : 'Spin for <em>tonight\'s film.</em>';
+    if(view==='dash') renderDash();
+    else if(view==='chat') window.MW_CHAT.render($('viewChat'),{movies:function(){return movies}, fmtLen:fmtLen, gname:gname, gens:gens});
+    else draw();
   }
 
   /* ---------- events ---------- */
@@ -509,25 +827,43 @@ li .field{height:28px;font-size:13px}
   syncSound();
   $('tabTodo').onclick=function(){tab='todo';editingId=null;render();};
   $('tabDone').onclick=function(){tab='done';editingId=null;render();};
+
+  var newGenres=[], pick=null;
+  function syncAddGenres(){ var n=newGenres.length; $('toggleGenres').textContent = n? 'Genres ('+n+')' : 'Genres'; }
+  function drawAddPicker(){ var host=$('addGenres'); host.innerHTML=''; host.append(genrePicker(newGenres)); }
+  function setPickInfo(){
+    var i=$('pickInfo');
+    if(!pick){ i.hidden=true; return; }
+    i.hidden=false; i.textContent='From the library: '+[fmtLen(pick.runtime),pick.year||''].filter(Boolean).join(' · ');
+  }
+  attachSuggest($('newTitle'),function(x){
+    pick=x; newGenres.length=0; newGenres.push.apply(newGenres,x.genres); syncAddGenres();
+    if(!$('addGenres').hidden) drawAddPicker();
+    setPickInfo();
+  });
+  $('newTitle').addEventListener('input',function(){ showErr(''); if(pick && norm(this.value)!==pick.n){ pick=null; setPickInfo(); } });
+  $('toggleGenres').onclick=function(){
+    var host=$('addGenres'), open=host.hidden;
+    host.hidden=!open; this.setAttribute('aria-expanded',String(open));
+    if(open){ drawAddPicker(); host.addEventListener('click',syncAddGenres); }
+  };
   $('addForm').onsubmit=function(e){
     e.preventDefault();
     var v=$('newTitle').value.trim(); if(!v) return;
     if(movies.some(function(m){return m.title.toLowerCase()===v.toLowerCase()})){ showErr('That movie is already on the list.'); return; }
-    showErr(''); $('newTitle').value=''; tab='todo'; store.add(v,newGenres.slice());
+    var x=pick||exactMatch(v), g=newGenres.slice();
+    if(x && !g.length && x.genres.length) g=x.genres.slice();
+    var extra=x?{runtime:x.runtime,year:x.year}:{};
+    showErr(''); $('newTitle').value=''; tab='todo'; pick=null; setPickInfo(); store.add(v,g,extra);
     newGenres.length=0; $('addGenres').hidden=true; $('toggleGenres').setAttribute('aria-expanded','false'); syncAddGenres();
   };
-  var newGenres=[];
-  function syncAddGenres(){ var n=newGenres.length; $('toggleGenres').textContent = n? 'Genres ('+n+')' : 'Genres'; }
-  $('toggleGenres').onclick=function(){
-    var host=$('addGenres'), open=host.hidden;
-    host.hidden=!open; this.setAttribute('aria-expanded',String(open));
-    if(open){ host.innerHTML=''; host.append(genrePicker(newGenres)); host.addEventListener('click',syncAddGenres); }
-  };
-  $('newTitle').oninput=function(){showErr('')};
   window.addEventListener('resize',draw);
+  window.addEventListener('hashchange',route);
 
   /* ---------- boot ---------- */
-  store = local; movies = lsLoad(); refresh();
+  if(window.MW_CHAT) $('navChat').hidden=false;   // the chat module exists only in the standalone copy
+  store = local; movies = lsLoad(); route(); refresh();
+  loadLib();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
   (async function(){
     try{

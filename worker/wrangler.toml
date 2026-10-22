@@ -1,0 +1,21 @@
+name = "r7-movie-wheel-chat"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Pages allowed to call this Worker, comma separated, exactly as the browser shows them (scheme + host, no path, no trailing slash).
+# Add the address where you host the app. http://localhost:8000 is for trying it on your own computer.
+ALLOWED_ORIGINS = "http://localhost:8000"
+# Any chat-capable OpenAI model your key can use. Smaller models cost less.
+OPENAI_MODEL = "gpt-4o-mini"
+
+# Secrets are NOT stored here. Set them with:
+#   npx wrangler secret put OPENAI_API_KEY
+#   npx wrangler secret put APP_PASSPHRASE
+
+# Optional hard rate limit (20 requests per minute per visitor). Uncomment, then run `npx wrangler deploy`.
+# [[unsafe.bindings]]
+# name = "RATE"
+# type = "ratelimit"
+# namespace_id = "1001"
+# simple = { limit = 20, period = 60 }
