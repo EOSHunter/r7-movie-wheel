@@ -58,6 +58,10 @@ You need a free [Cloudflare account](https://dash.cloudflare.com/sign-up) and an
 
 5. Open the app, go to **Chat**, open **Connection settings**, and paste the Worker address and your passphrase. They are saved in your browser only. Do this once on each device. To avoid typing the address on each device, put it in `config.js` instead. As soon as both are entered, the list syncs: a line under the list says when it last synced, and shows a message if something is wrong (wrong passphrase, address not allowed, Worker unreachable).
 
+### Hosting it on a site you control instead
+
+If you host the app on your own Cloudflare Pages site, you can skip the Worker: set `window.MW_CONFIG = { api: '/api/movie-wheel' }` in `config.js` and provide `list` and `chat` endpoints on the same site, protected by Cloudflare Access, so there is no address or passphrase to enter on any device. `sync.js` and `chat.js` use the Worker address and passphrase only when `api` is not set.
+
 ### What the Worker checks
 
 - Only the origins in `ALLOWED_ORIGINS` can call it.

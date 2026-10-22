@@ -7,7 +7,8 @@
 
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  function workerUrl() { return (lsGet(URL_KEY) || (window.MW_CONFIG && window.MW_CONFIG.workerUrl) || '').trim(); }
+  function apiBase() { return (window.MW_CONFIG && window.MW_CONFIG.api) || ''; }   // same-site API behind Cloudflare Access: no address or passphrase
+  function workerUrl() { return (apiBase() || lsGet(URL_KEY) || (window.MW_CONFIG && window.MW_CONFIG.workerUrl) || '').trim().replace(/\/+$/, ''); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
   /* The history the assistant reads, as compact text: a summary, then one line per movie. */
@@ -67,15 +68,19 @@
     text = (text || '').trim();
     if (!text || busy) return;
     var url = workerUrl(), pass = lsGet(PASS_KEY);
-    if (!url) { ui.settings.open = true; say('Add your Worker address in Connection settings first.', 'err'); return; }
-    if (!pass) { ui.settings.open = true; say('Add your passphrase in Connection settings first.', 'err'); return; }
+    if (!apiBase()) {
+      if (!url) { ui.settings.open = true; say('Add your Worker address in Connection settings first.', 'err'); return; }
+      if (!pass) { ui.settings.open = true; say('Add your passphrase in Connection settings first.', 'err'); return; }
+    }
     busy = true; ui.send.disabled = true; ui.sugg.hidden = true;
     say(text, 'user'); ui.input.value = '';
     history.push({ role: 'user', content: text });
     var wait = say('Thinking…', 'bot wait');
-    fetch(url, {
+    var headers = { 'Content-Type': 'application/json' };
+    if (!apiBase()) headers['X-Passphrase'] = pass;
+    fetch(url + '/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Passphrase': pass },
+      headers: headers,
       body: JSON.stringify({ messages: history.slice(-20), context: buildContext() })
     }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (x) {
@@ -85,7 +90,7 @@
       })
       .catch(function () {
         wait.remove(); history.pop();
-        say('Could not reach the Worker. Check the address, and that its ALLOWED_ORIGINS includes ' + location.origin + '.', 'err');
+        say(apiBase() ? 'Could not reach the server. If you are signed out, reload the page to sign in again.' : 'Could not reach the Worker. Check the address, and that its ALLOWED_ORIGINS includes ' + location.origin + '.', 'err');
       })
       .then(function () { busy = false; ui.send.disabled = false; ui.input.focus(); });
   }
@@ -108,7 +113,7 @@
     p.oninput = function () { lsSet(PASS_KEY, p.value); if (window.MW_SYNC) window.MW_SYNC.sync(); };
     set.append(l1, u, l2, p, el('div', 'fine', 'Saved in this browser only. Your OpenAI key is never in this page; it lives on the Worker.'));
     det.append(set);
-    if (!workerUrl() || !lsGet(PASS_KEY)) det.open = true;
+    if (!apiBase() && (!workerUrl() || !lsGet(PASS_KEY))) det.open = true;
 
     ui.log = el('div', 'log'); ui.log.setAttribute('aria-live', 'polite');
     ui.sugg = el('div', 'sugg');
@@ -124,7 +129,8 @@
     form.append(ui.input, ui.send, clear);
     form.onsubmit = function (e) { e.preventDefault(); send(ui.input.value); };
 
-    root.append(det, ui.log, ui.sugg, form, el('div', 'fine', 'Your list, ratings and reviews are sent to your own Worker and then to OpenAI with each question.'));
+    if (!apiBase()) root.append(det);
+    root.append(ui.log, ui.sugg, form, el('div', 'fine', apiBase() ? 'Your list, ratings and reviews are sent to your own site and then to OpenAI with each question.' : 'Your list, ratings and reviews are sent to your own Worker and then to OpenAI with each question.'));
     h.append(root);
   }
 

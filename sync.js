@@ -10,14 +10,19 @@
     catch (e) { return { savedAt: 0, removed: {}, dirty: false }; }
   }
   function save() { try { localStorage.setItem(ST_KEY, JSON.stringify(st)); } catch (e) {} }
-  function base() { return (lsGet(URL_KEY) || (window.MW_CONFIG && window.MW_CONFIG.workerUrl) || '').trim().replace(/\/+$/, ''); }
-  function enabled() { return !!base() && !!lsGet(PASS_KEY); }
+  // Two ways to reach the backend. On r7orbit.io the page and its API are one site behind Cloudflare Access (MW_CONFIG.api = '/api/movie-wheel'):
+  // no address or passphrase, the sign-in cookie does it. Elsewhere it is a Worker whose address and passphrase are typed under Chat > Connection settings.
+  function apiBase() { return (window.MW_CONFIG && window.MW_CONFIG.api) || ''; }
+  function base() { return apiBase() || (lsGet(URL_KEY) || (window.MW_CONFIG && window.MW_CONFIG.workerUrl) || '').trim().replace(/\/+$/, ''); }
+  function enabled() { return !!apiBase() || (!!base() && !!lsGet(PASS_KEY)); }
   function say(t) { if (api && api.status) api.status(t); }
 
   function req(method, body) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (!apiBase()) headers['X-Passphrase'] = lsGet(PASS_KEY);
     return fetch(base() + '/list', {
       method: method,
-      headers: { 'Content-Type': 'application/json', 'X-Passphrase': lsGet(PASS_KEY) },
+      headers: headers,
       body: body ? JSON.stringify(body) : undefined
     }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); });
   }
@@ -52,12 +57,12 @@
     }
     return p.then(function () { say('Synced at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '.'); })
       .catch(function (x) {
-        if (x && x.status === 401) say('Sync paused: the passphrase does not match the Worker.');
+        if (x && x.status === 401) say(apiBase() ? 'Signed out. Reload the page to sign in again.' : 'Sync paused: the passphrase does not match the Worker.');
         else if (x && x.status === 403) say('Sync paused: the Worker does not allow this address. Add ' + location.origin + ' to ALLOWED_ORIGINS and deploy again.');
         else if (x && x.status === 501) say('Sync paused: the Worker has no storage yet. Deploy it again with the MOVIES storage in wrangler.toml.');
         else if (x && x.status === 429) say('Sync paused for a minute: too many requests.');
         else if (x && x.d && x.d.error) say('Sync paused: ' + x.d.error);
-        else say('Offline or the Worker is unreachable. Your changes are saved here and will sync later.');
+        else say(apiBase() ? 'Offline, or signed out. Your changes are saved here and will sync later. If this stays, reload the page to sign in again.' : 'Offline or the Worker is unreachable. Your changes are saved here and will sync later.');
       })
       .then(function () { busy = false; if (again) { again = false; schedule(1500); } });
   }
